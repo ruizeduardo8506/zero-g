@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RarityTier" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/rarity_tier.gd" id="1_rarity"]
+
+[resource]
+script = ExtResource("1_rarity")
+id = 6
+tier_name = "Mythic"
+color = Color(0.95, 0.15, 0.2, 1)
+stat_multiplier = 1.85
+uses_fixed_stats = false
+deck_impact = "Grants a unique Synergy combo card"
+is_standard_drop = false
