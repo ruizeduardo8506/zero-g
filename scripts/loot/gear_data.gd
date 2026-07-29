@@ -2,7 +2,7 @@ class_name GearData
 extends Resource
 
 ## Base custom resource for all equipment.
-## Specialize via WeaponData and ShieldData (ArmorData can extend this later).
+## Specialize via WeaponData, ShieldData, ArmorData, and AccessoryData.
 ##
 ## Rarity: every piece stores rarity_id. Concrete subclasses scale their own
 ## base stats through get_rarity().scale_stat(...) — see RarityTier comments.

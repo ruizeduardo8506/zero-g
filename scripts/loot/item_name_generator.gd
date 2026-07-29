@@ -166,6 +166,24 @@ const LEGENDS_SHIELD: Array[String] = [
 	"Scutum, The Legion's Wall"
 ]
 
+const LEGENDS_ARMOR: Array[String] = [
+	"Aegis of the Fallen King",
+	"Mantle of the Old Gods",
+	"Plate of the Silent Decree",
+	"Hide of the Rift Beast",
+	"Vestments of the Silver Choir",
+	"Greaves of the Last Watch",
+]
+
+const LEGENDS_ACCESSORY: Array[String] = [
+	"The Eye of the Storm",
+	"Heart of the Forge",
+	"Signet of the Broken Seal",
+	"Amulet of the Wild Pantheon",
+	"Ring of the Civic Guard",
+	"Necklace of the Ashen Grove",
+]
+
 # Flat fallback catalog of legends
 const LORE_ADAPTED_LEGENDS: Array[String] = [
 	"Excalibur, The First Forge",
@@ -195,7 +213,11 @@ const LORE_ADAPTED_LEGENDS: Array[String] = [
 	"Artemis, The Huntress Vow",
 	"Kusanagi, The Storm Seeker",
 	"Storm Breaker, The hand of Thor",
-	"Giant Thumb, The Opposed Finger"
+	"Giant Thumb, The Opposed Finger",
+	"Aegis of the Fallen King",
+	"Mantle of the Old Gods",
+	"The Eye of the Storm",
+	"Heart of the Forge",
 ]
 
 # --- Materials: Old Gods (Primal / Nature / Brutal) ---
@@ -267,7 +289,7 @@ const NEW_GODS_LORE_TITLES: Array[String] = [
 ]
 
 
-## Build a display name for WeaponData or ShieldData from rarity + optional faction.
+## Build a display name for WeaponData, ShieldData, ArmorData, or AccessoryData.
 static func generate_equipment_name(
 	equipment: GearData,
 	rarity: RarityTier,
@@ -298,6 +320,10 @@ static func _legends_for(equipment: GearData) -> Array[String]:
 		return LEGENDS_SHIELD
 	if equipment is WeaponData:
 		return _weapon_legends((equipment as WeaponData).weapon_type)
+	if equipment is ArmorData:
+		return LEGENDS_ARMOR
+	if equipment is AccessoryData:
+		return LEGENDS_ACCESSORY
 	return LORE_ADAPTED_LEGENDS
 
 
@@ -359,7 +385,35 @@ static func _base_noun(equipment: GearData) -> String:
 		return _weapon_noun((equipment as WeaponData).weapon_type)
 	if equipment is ShieldData:
 		return "Shield"
+	if equipment is ArmorData:
+		return _armor_noun((equipment as ArmorData).armor_slot)
+	if equipment is AccessoryData:
+		return _accessory_noun((equipment as AccessoryData).accessory_type)
 	return "Gear"
+
+
+static func _armor_noun(slot: ArmorData.ArmorSlot) -> String:
+	match slot:
+		ArmorData.ArmorSlot.HELMET:
+			return "Helmet"
+		ArmorData.ArmorSlot.CHEST:
+			return "Chestguard"
+		ArmorData.ArmorSlot.GLOVES:
+			return "Gauntlets"
+		ArmorData.ArmorSlot.BOOTS:
+			return "Boots"
+		_:
+			return "Armor"
+
+
+static func _accessory_noun(type: AccessoryData.AccessoryType) -> String:
+	match type:
+		AccessoryData.AccessoryType.RING:
+			return _pick(["Ring", "Signet"])
+		AccessoryData.AccessoryType.NECKLACE:
+			return _pick(["Necklace", "Amulet"])
+		_:
+			return "Accessory"
 
 
 static func _weapon_noun(type: WeaponData.WeaponType) -> String:

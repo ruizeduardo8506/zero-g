@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AccessoryData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/accessory_data.gd" id="1_acc"]
+
+[resource]
+script = ExtResource("1_acc")
+id = "iron_signet"
+display_name = "Iron Signet"
+description = "A plain band. No class force — yet."
+equip_slot = 3
+rarity_id = 1
+accessory_type = 0
+is_class_anchor = false
+is_cursed = false
