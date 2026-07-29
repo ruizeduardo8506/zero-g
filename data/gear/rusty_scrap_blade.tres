@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = "rusty_scrap_blade"
+display_name = "Rusty Scrap Blade"
+description = "Salvaged metal. Barely a weapon, but it cuts."
+equip_slot = 0
+rarity_id = 0
+weapon_type = 0
+handedness = 0
+can_be_offhand = false
+base_damage = 4
+damage_type = 0
+is_cursed = false

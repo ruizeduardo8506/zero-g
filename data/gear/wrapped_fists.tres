@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = "wrapped_fists"
+display_name = "Wrapped Fists"
+description = "Cloth and wire. Both hands committed — no shield."
+equip_slot = 0
+rarity_id = 1
+weapon_type = 10
+handedness = 1
+can_be_offhand = false
+base_damage = 11
+damage_type = 1
+is_cursed = false
