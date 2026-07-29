@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ArmorData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/armor_data.gd" id="1_armor"]
+
+[resource]
+script = ExtResource("1_armor")
+id = "patched_chestguard"
+display_name = "Patched Chestguard"
+description = "Scavenged plates laced with cord."
+equip_slot = 2
+rarity_id = 1
+armor_slot = 1
+base_defense = 6
+is_cursed = false
