@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RarityTier" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/rarity_tier.gd" id="1_rarity"]
+
+[resource]
+script = ExtResource("1_rarity")
+id = 2
+tier_name = "Magic"
+color = Color(0.25, 0.45, 1, 1)
+stat_multiplier = 1.15
+uses_fixed_stats = false
+deck_impact = "Low chance to add 1 basic utility card"
+is_standard_drop = true

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RarityTier" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/rarity_tier.gd" id="1_rarity"]
+
+[resource]
+script = ExtResource("1_rarity")
+id = 3
+tier_name = "Rare"
+color = Color(1, 0.85, 0.2, 1)
+stat_multiplier = 1.25
+uses_fixed_stats = false
+deck_impact = "Guaranteed 1 intermediate card"
+is_standard_drop = true
