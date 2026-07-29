@@ -2,18 +2,27 @@ extends Node
 
 # Decoupled combat signals. Systems emit here; UI and audio subscribe.
 
+# COMBAT LIFECYCLE
 signal combat_started
 signal combat_ended(victory: bool)
+signal combat_log(message: String)
 
-signal turn_started(turn_number: int, active_combatant_name: String)
-signal turn_ended(turn_number: int)
-
+# COMBAT & DECK SIGNALS
 signal card_drawn(card: CardData, combatant_name: String)
 signal card_played(card: CardData, combatant_name: String)
+signal deck_shuffled()
+signal hand_discarded()
 signal hand_updated(hand: Array[CardData])
-
-signal mana_updated(current: int, cap: int)
+signal fatigue_triggered()
 signal piles_updated(draw_count: int, burn_count: int)
 
+# ENTITY & STAT SIGNALS
+signal health_changed(entity_id: String, new_hp: int, max_hp: int)
+signal mana_changed(entity_id: String, new_mana: int, max_mana: int)
+signal mana_updated(current: int, cap: int)
+signal entity_died(entity_id: String)
+
+# GAME STATE SIGNALS
+signal turn_started(turn_number: int, active_combatant_name: String)
+signal turn_ended(turn_number: int)
 signal phase_changed(previous: int, current: int)
-signal combat_log(message: String)
