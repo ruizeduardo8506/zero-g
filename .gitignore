@@ -1,0 +1,42 @@
+# Godot 4+
+.godot/
+*.translation
+
+# Import cache / OS
+.DS_Store
+*~
+*.tmp
+*.temp
+*.log
+
+# Exports & builds
+export/
+builds/
+*.apk
+*.aab
+*.ipa
+*.app
+*.exe
+*.x86_64
+*.x86
+*.dmg
+*.zip
+
+# Mono / C# (if ever enabled)
+.mono/
+data_*/
+mono_crash.*.json
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Secrets / signing (never commit)
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+.env
+credentials.json
