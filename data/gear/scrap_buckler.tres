@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ShieldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/shield_data.gd" id="1_shield"]
+
+[resource]
+script = ExtResource("1_shield")
+id = "scrap_buckler"
+display_name = "Scrap Buckler"
+description = "A lid and a strap. Miracle Guard: thin hope against a hard hit."
+equip_slot = 1
+rarity_id = 0
+shield_type = 0
+base_hp_boost = 8
+deflect_chance = 0.05
+has_defiance = false
+is_cursed = false

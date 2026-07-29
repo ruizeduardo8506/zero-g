@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = "bone_dagger"
+display_name = "Bone Dagger"
+description = "Light enough for the off-hand — or a desperate main-hand."
+equip_slot = 1
+rarity_id = 1
+weapon_type = 3
+handedness = 0
+can_be_offhand = true
+base_damage = 5
+damage_type = 0
+is_cursed = false
