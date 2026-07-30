@@ -9,7 +9,7 @@ signal combat_log(message: String)
 
 # COMBAT & DECK SIGNALS
 signal card_drawn(card: CardData, combatant_name: String)
-signal card_played(card: CardData, combatant_name: String)
+signal card_played(card: Resource, combatant_name: String)
 signal deck_shuffled()
 signal hand_discarded()
 signal hand_updated(hand: Array[CardData])

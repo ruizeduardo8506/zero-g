@@ -1,4 +1,4 @@
-class_name DeckManager
+class_name CombatantDeck
 extends RefCounted
 
 signal hand_changed(hand: Array[CardData])
