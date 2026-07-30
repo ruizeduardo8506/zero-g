@@ -3,6 +3,8 @@ extends Node2D
 
 ## Base class for all combat participants (party members and enemies).
 ## Routes HP / mana updates through EventBus so UI stays decoupled (GDD Phase 2).
+## Party members should be in group "player_combat_entity" (or registered via
+## CombatStateMachine.set_active_player_entity) so Fatigue mana-burn can find them.
 
 # GDD defaults: mana regen 5 / turn, mana cap 20.
 @export var entity_id: String = ""
@@ -58,11 +60,11 @@ func regenerate_mana() -> void:
 
 
 ## GDD Fatigue — empty draw-pile reshuffle burns mana to 0.
-## Forces reliance on zero-mana physical weapon procs until the next regen.
+## Called by CombatStateMachine after EventBus.fatigue_triggered (from DeckManager).
+## Does not re-emit fatigue_triggered — that would recurse.
 func trigger_fatigue_penalty() -> void:
 	current_mana = 0
 	EventBus.mana_changed.emit(entity_id, current_mana, max_mana)
-	EventBus.fatigue_triggered.emit()
 
 
 func is_alive() -> bool:
