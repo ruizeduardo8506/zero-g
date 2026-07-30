@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 EventBus="*res://scripts/autoload/event_bus.gd"
+InputManager="*res://autoloads/input_manager.gd"
 GameManager="*res://autoloads/game_manager.gd"
 InventoryManager="*res://autoloads/inventory_manager.gd"
 DeckManager="*res://autoloads/deck_manager.gd"

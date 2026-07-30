@@ -2,6 +2,7 @@ class_name EntityUI
 extends Control
 
 ## Compact floating HP/MP bars bound to a single CombatEntity.
+## Also acts as a drag-and-drop target for CardVisual plays.
 
 const HEALTH_FILL := Color(0.2, 0.8, 0.2, 1.0)
 const MANA_FILL := Color(0.2, 0.4, 0.9, 1.0)
@@ -10,6 +11,8 @@ const ENEMY_HEALTH_FILL := Color(0.8, 0.2, 0.2, 1.0)
 @export var health_bar: ProgressBar
 @export var mana_bar: ProgressBar
 
+## Set in setup() — the CombatEntity this widget represents.
+var parent_entity: CombatEntity
 var _entity: CombatEntity
 
 
@@ -21,6 +24,7 @@ func _ready() -> void:
 
 func setup(entity: CombatEntity) -> void:
 	_disconnect_entity()
+	parent_entity = entity
 	_entity = entity
 	if _entity == null:
 		return
@@ -33,6 +37,20 @@ func setup(entity: CombatEntity) -> void:
 	_apply_bar_colors()
 
 
+func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+	if parent_entity == null or not is_instance_valid(parent_entity):
+		return false
+	if CombatStateMachine.current_phase != CombatStateMachine.Phase.PLAYER_MAIN:
+		return false
+	return data is Resource
+
+
+func _drop_data(_at_position: Vector2, data: Variant) -> void:
+	if parent_entity == null or not (data is Resource):
+		return
+	EventBus.card_played.emit(data as Resource, parent_entity)
+
+
 func _disconnect_entity() -> void:
 	if _entity == null:
 		return
@@ -41,6 +59,7 @@ func _disconnect_entity() -> void:
 	if _entity.local_mana_changed.is_connected(_on_local_mana_changed):
 		_entity.local_mana_changed.disconnect(_on_local_mana_changed)
 	_entity = null
+	parent_entity = null
 
 
 func _on_local_health_changed(new_hp: int, max_hp: int) -> void:

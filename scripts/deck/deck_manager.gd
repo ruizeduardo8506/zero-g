@@ -56,6 +56,18 @@ func play_card(card: CardData) -> bool:
 	return true
 
 
+## Undo a play (e.g. controller targeting cancelled) — burn → hand.
+func return_card_to_hand(card: CardData) -> bool:
+	var index: int = burn_pile.find(card)
+	if index < 0:
+		return false
+	burn_pile.remove_at(index)
+	hand.append(card)
+	hand_changed.emit(hand)
+	_emit_pile_state()
+	return true
+
+
 func reshuffle_from_burn(apply_fatigue: bool = true) -> void:
 	if burn_pile.is_empty():
 		return

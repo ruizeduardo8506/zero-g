@@ -2,9 +2,11 @@ class_name CardVisual
 extends PanelContainer
 
 ## Single-card UI widget. Bind labels/background in the editor, then call setup().
+## Supports click-to-target and mouse/touch drag-and-drop onto EntityUI.
 
 const HOVER_SCALE := Vector2(1.08, 1.08)
 const HOVER_TWEEN_SEC: float = 0.12
+const DRAG_PREVIEW_SCALE := Vector2(0.85, 0.85)
 
 signal card_clicked(card_data: Resource)
 
@@ -40,17 +42,32 @@ func setup(data: Resource) -> void:
 		description_label.text = _resolve_description(data)
 
 
+func _get_drag_data(_at_position: Vector2) -> Variant:
+	if card_data == null:
+		return null
+	var preview: Control = duplicate() as Control
+	if preview != null:
+		preview.scale = DRAG_PREVIEW_SCALE
+		preview.modulate = Color(1, 1, 1, 0.92)
+		preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_drag_preview(preview)
+	return card_data
+
+
 func _gui_input(event: InputEvent) -> void:
 	if card_data == null:
 		return
+	# Click / tap selects card for manual targeting (drag uses _get_drag_data instead).
 	if event is InputEventMouseButton:
 		var mouse: InputEventMouseButton = event
-		if mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT:
+		if not mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT:
+			if get_viewport().gui_is_dragging():
+				return
 			card_clicked.emit(card_data)
 			accept_event()
 	elif event is InputEventScreenTouch:
 		var touch: InputEventScreenTouch = event
-		if touch.pressed:
+		if not touch.pressed and not get_viewport().gui_is_dragging():
 			card_clicked.emit(card_data)
 			accept_event()
 

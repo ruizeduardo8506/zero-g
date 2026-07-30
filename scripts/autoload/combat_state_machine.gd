@@ -2,6 +2,7 @@ extends Node
 
 ## Global combat phase controller (autoload).
 ## Owns turn/phase flow, Fatigue → player entity, and card Action Resolution / targeting.
+## Mouse/touch: drag-drop resolves with a concrete target. Controller: cycle targets then confirm.
 
 const CombatEntityScript = preload("res://scripts/combat/combat_entity.gd")
 
@@ -33,8 +34,11 @@ var is_player_turn: bool = true
 ## Phase-2 player CombatEntity registered by the combat scene / controller.
 var active_player_entity: Node2D = null
 
-## Card awaiting a clicked target during WAITING_FOR_TARGET.
+## Card awaiting a target during WAITING_FOR_TARGET.
 var pending_card: Resource = null
+## Controller targeting cycle.
+var valid_targets: Array[Node] = []
+var current_target_index: int = 0
 
 var _applying_fatigue: bool = false
 var _resolving_card: bool = false
@@ -54,19 +58,19 @@ func set_active_player_entity(entity: Node2D) -> void:
 func start_combat() -> void:
 	turn_number = 0
 	is_player_turn = true
-	pending_card = null
+	_clear_targeting_state()
 	_transition_to(Phase.SETUP)
 
 
 func end_combat(victory: bool) -> void:
-	pending_card = null
+	_clear_targeting_state()
 	_transition_to(Phase.VICTORY if victory else Phase.DEFEAT)
 
 
 func begin_player_turn() -> void:
 	is_player_turn = true
 	turn_number += 1
-	pending_card = null
+	_clear_targeting_state()
 	_transition_to(Phase.TURN_START)
 
 
@@ -79,13 +83,13 @@ func enter_targeting() -> void:
 
 
 func end_player_turn() -> void:
-	pending_card = null
+	_clear_targeting_state()
 	_transition_to(Phase.TURN_END)
 
 
 func begin_enemy_turn() -> void:
 	is_player_turn = false
-	pending_card = null
+	_clear_targeting_state()
 	_transition_to(Phase.ENEMY_TURN)
 
 
@@ -93,12 +97,35 @@ func reset() -> void:
 	turn_number = 0
 	is_player_turn = true
 	active_player_entity = null
-	pending_card = null
+	_clear_targeting_state()
 	_transition_to(Phase.INACTIVE)
 
 
-## Card committed from hand — enter targeting instead of auto-resolving.
-func _on_card_played(card_data: Resource, _target: Node) -> void:
+func _input(event: InputEvent) -> void:
+	if current_phase != Phase.WAITING_FOR_TARGET:
+		return
+	if pending_card == null:
+		return
+
+	if event.is_action_pressed("ui_left"):
+		_cycle_target(-1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_right"):
+		_cycle_target(1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_accept"):
+		if valid_targets.is_empty():
+			return
+		var chosen: Node = valid_targets[current_target_index]
+		_resolve_card_on_target(chosen)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel"):
+		_cancel_pending_card()
+		get_viewport().set_input_as_handled()
+
+
+## Card committed from hand.
+func _on_card_played(card_data: Resource, target: Node) -> void:
 	if _resolving_card:
 		return
 	if current_phase != Phase.PLAYER_MAIN:
@@ -106,20 +133,112 @@ func _on_card_played(card_data: Resource, _target: Node) -> void:
 	if card_data == null:
 		return
 
+	# Controller: always enter explicit target cycling (ignore drag target).
+	if InputManager.is_using_controller:
+		_begin_controller_targeting(card_data)
+		return
+
+	# Mouse / touch: drag-drop provides the target and resolves immediately.
 	pending_card = card_data
+	if (
+		target != null
+		and is_instance_valid(target)
+		and target.has_method("take_damage")
+		and target.has_method("heal")
+	):
+		_transition_to(Phase.WAITING_FOR_TARGET)
+		_resolve_card_on_target(target)
+		return
+
+	# Fallback click-to-target (no drag).
 	_transition_to(Phase.WAITING_FOR_TARGET)
 	EventBus.targeting_started.emit(card_data)
-	var card_name: String = _resolve_card_name(card_data)
-	EventBus.combat_log.emit("Select a target for %s." % card_name)
+	EventBus.combat_log.emit("Select a target for %s." % _resolve_card_name(card_data))
 
 
-## Manual targeting — resolve pending card against the clicked combatant.
+func _begin_controller_targeting(card_data: Resource) -> void:
+	pending_card = card_data
+	_populate_valid_targets(card_data)
+	current_target_index = 0
+	_transition_to(Phase.WAITING_FOR_TARGET)
+	EventBus.targeting_started.emit(card_data)
+	if valid_targets.is_empty():
+		EventBus.combat_log.emit("No valid targets for %s." % _resolve_card_name(card_data))
+		_cancel_pending_card()
+		return
+	_emit_current_target_hovered()
+	EventBus.combat_log.emit(
+		"Targeting %s — D-pad to cycle, A/Confirm to cast, B/Cancel to abort."
+		% _resolve_card_name(card_data)
+	)
+
+
+func _populate_valid_targets(card_data: Resource) -> void:
+	valid_targets.clear()
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	var group_name: String = ENEMIES_GROUP
+	if _is_healing_or_defensive_card(card_data):
+		group_name = PLAYER_GROUP
+	var nodes: Array[Node] = tree.get_nodes_in_group(group_name)
+	for node: Node in nodes:
+		if not is_instance_valid(node):
+			continue
+		if node.has_method("is_alive") and not bool(node.call("is_alive")):
+			continue
+		valid_targets.append(node)
+
+
+func _is_healing_or_defensive_card(card_data: Resource) -> bool:
+	return _resolve_card_heal(card_data) > 0
+
+
+func _cycle_target(direction: int) -> void:
+	if valid_targets.is_empty():
+		return
+	var size: int = valid_targets.size()
+	current_target_index = (current_target_index + direction) % size
+	if current_target_index < 0:
+		current_target_index += size
+	_emit_current_target_hovered()
+
+
+func _emit_current_target_hovered() -> void:
+	if valid_targets.is_empty():
+		return
+	if current_target_index < 0 or current_target_index >= valid_targets.size():
+		current_target_index = 0
+	var target: Node = valid_targets[current_target_index]
+	if is_instance_valid(target):
+		EventBus.target_hovered.emit(target)
+
+
+func _cancel_pending_card() -> void:
+	var cancelled: Resource = pending_card
+	_clear_targeting_state()
+	_transition_to(Phase.PLAYER_MAIN)
+	if cancelled != null:
+		EventBus.card_play_cancelled.emit(cancelled)
+		EventBus.combat_log.emit("Cancelled %s." % _resolve_card_name(cancelled))
+
+
+## Manual mouse/touch click targeting while WAITING_FOR_TARGET.
 func _on_entity_clicked(target: CombatEntity) -> void:
 	if current_phase != Phase.WAITING_FOR_TARGET:
 		return
 	if pending_card == null or target == null:
 		return
+	# Controller mode uses D-pad + ui_accept instead of free clicks.
+	if InputManager.is_using_controller:
+		return
+	_resolve_card_on_target(target)
+
+
+func _resolve_card_on_target(target: Node) -> void:
 	if _resolving_card:
+		return
+	if pending_card == null or target == null:
 		return
 
 	_resolving_card = true
@@ -135,28 +254,33 @@ func _on_entity_clicked(target: CombatEntity) -> void:
 		print("Not enough mana!")
 		EventBus.combat_log.emit("Not enough mana!")
 		_resolving_card = false
-		pending_card = null
+		_clear_targeting_state()
 		_transition_to(Phase.PLAYER_MAIN)
 		return
 
-	# Keep ManaPool / HUD in sync with entity mana after spend.
 	if "current_mana" in player and "max_mana" in player:
 		EventBus.mana_updated.emit(int(player.get("current_mana")), int(player.get("max_mana")))
 
+	var target_id: String = str(target.get("entity_id")) if "entity_id" in target else target.name
 	var heal: int = _resolve_card_heal(card)
 	if heal > 0 and target.has_method("heal"):
-		target.heal(heal)
-		EventBus.combat_log.emit("Healed %s for %d HP." % [target.entity_id, heal])
+		target.call("heal", heal)
+		EventBus.combat_log.emit("Healed %s for %d HP." % [target_id, heal])
 
 	var damage: int = _resolve_card_damage(card)
 	if damage > 0 and target.has_method("take_damage"):
-		target.take_damage(damage)
-		EventBus.combat_log.emit("Dealt %d damage to %s." % [damage, target.entity_id])
+		target.call("take_damage", damage)
+		EventBus.combat_log.emit("Dealt %d damage to %s." % [damage, target_id])
 
-	pending_card = null
+	_clear_targeting_state()
 	_resolving_card = false
-	# Return to player turn (PLAYER_MAIN).
 	_transition_to(Phase.PLAYER_MAIN)
+
+
+func _clear_targeting_state() -> void:
+	pending_card = null
+	valid_targets.clear()
+	current_target_index = 0
 
 
 func _resolve_mana_cost(card_data: Resource, player: Node) -> int:
