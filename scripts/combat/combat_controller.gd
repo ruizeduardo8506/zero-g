@@ -34,7 +34,7 @@ func try_play_card(card: CardData) -> bool:
 		return false
 	if not player.play_card(card):
 		return false
-	EventBus.card_played.emit(card, player.display_name)
+	EventBus.card_played.emit(card, null)
 	EventBus.combat_log.emit("Played %s (-%d mana)." % [card.display_name, card.mana_cost])
 	return true
 

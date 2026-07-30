@@ -9,7 +9,8 @@ signal combat_log(message: String)
 
 # COMBAT & DECK SIGNALS
 signal card_drawn(card: CardData, combatant_name: String)
-signal card_played(card: Resource, combatant_name: String)
+## `target` is the combat Node chosen for the card; null when untargeted / pending.
+signal card_played(card: Resource, target: Node)
 signal deck_shuffled()
 signal hand_discarded()
 signal hand_updated(hand: Array[CardData])

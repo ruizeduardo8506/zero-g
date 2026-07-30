@@ -2,6 +2,7 @@ extends Control
 
 @onready var _controller: CombatController = %CombatController
 @onready var _hud: CombatHud = %CombatHud
+@onready var _hand_ui: HandUI = %HandManager
 
 
 func _ready() -> void:
@@ -14,19 +15,30 @@ func _wire_signals() -> void:
 	EventBus.hand_updated.connect(_on_hand_updated)
 	EventBus.mana_updated.connect(_on_mana_updated)
 	EventBus.piles_updated.connect(_on_piles_updated)
-	_hud.get_hand_container().card_selected.connect(_on_card_selected)
 	_hud.end_turn_pressed.connect(_controller.end_player_turn)
+	if _hand_ui != null:
+		_hand_ui.card_play_requested.connect(_on_card_play_requested)
+	var hand: HandContainer = _hud.get_hand_container()
+	if hand != null:
+		hand.card_selected.connect(_on_card_selected)
 
 
-func _on_phase_changed(_previous: int, current: int) -> void:
-	var phase_name: String = CombatStateMachine.Phase.keys()[current]
+func _on_phase_changed(_previous: int, _current: int) -> void:
+	# Nested transitions (SETUP → TURN_START → PLAYER_MAIN) emit intermediate
+	# phase_changed callbacks after the final phase is already set. Always sync
+	# UI from the live phase so End Turn is not left disabled.
+	var live_phase: int = CombatStateMachine.current_phase
+	var phase_name: String = CombatStateMachine.Phase.keys()[live_phase]
 	_hud.update_turn(CombatStateMachine.turn_number, phase_name)
-	var is_player_main: bool = current == CombatStateMachine.Phase.PLAYER_MAIN
+	var is_player_main: bool = live_phase == CombatStateMachine.Phase.PLAYER_MAIN
 	_hud.set_interaction_enabled(is_player_main)
 
 
 func _on_hand_updated(hand: Array[CardData]) -> void:
-	_hud.get_hand_container().display_hand(hand, _controller.player.mana.current)
+	var hand_container: HandContainer = _hud.get_hand_container()
+	if hand_container == null:
+		return
+	hand_container.display_hand(hand, _controller.player.mana.current)
 
 
 func _on_mana_updated(current: int, cap: int) -> void:
@@ -36,6 +48,13 @@ func _on_mana_updated(current: int, cap: int) -> void:
 
 func _on_piles_updated(draw_count: int, burn_count: int) -> void:
 	_hud.update_piles(draw_count, burn_count)
+
+
+func _on_card_play_requested(card: Resource) -> void:
+	if card is CardData:
+		_controller.try_play_card(card as CardData)
+	else:
+		EventBus.combat_log.emit("Cannot play card — unsupported card type.")
 
 
 func _on_card_selected(card: CardData) -> void:
