@@ -1,0 +1,42 @@
+[gd_scene load_steps=2 format=3 uid="uid://entity_ui_zero_g"]
+
+[ext_resource type="Script" path="res://scripts/ui/entity_ui.gd" id="1"]
+
+[node name="EntityUI" type="Control" node_paths=PackedStringArray("health_bar", "mana_bar")]
+custom_minimum_size = Vector2(96, 28)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 96.0
+offset_bottom = 28.0
+mouse_filter = 0
+script = ExtResource("1")
+health_bar = NodePath("VBox/HealthBar")
+mana_bar = NodePath("VBox/ManaBar")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="HealthBar" type="ProgressBar" parent="VBox"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="ManaBar" type="ProgressBar" parent="VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+max_value = 20.0
+value = 20.0
+show_percentage = false

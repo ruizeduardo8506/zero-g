@@ -42,9 +42,8 @@ func try_play_card(card: CardData) -> bool:
 	EventBus.card_played.emit(card, null)
 	if not player.deck.play_card(card):
 		return false
-	_sync_mana_pool_from_player_entity()
 	player.cards_played_this_turn += 1
-	EventBus.combat_log.emit("Played %s (-%d mana)." % [card.display_name, card.mana_cost])
+	# Mana is spent when a target is clicked (WAITING_FOR_TARGET → resolve).
 	return true
 
 

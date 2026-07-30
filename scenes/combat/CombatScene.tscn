@@ -33,6 +33,7 @@ script = ExtResource("2")
 
 [node name="Player" type="Node2D" parent="." groups=["player", "player_combat_entity"]]
 unique_name_in_owner = true
+position = Vector2(220, 420)
 script = ExtResource("7_entity")
 entity_id = "player"
 max_hp = 100
@@ -40,6 +41,7 @@ max_mana = 20
 
 [node name="Enemy" type="Node2D" parent="." groups=["enemies"]]
 unique_name_in_owner = true
+position = Vector2(980, 280)
 script = ExtResource("8_enemy")
 entity_id = "enemy"
 max_hp = 80
@@ -48,7 +50,7 @@ attack_damage = 5
 
 [node name="CombatUI" type="CanvasLayer" parent="."]
 
-[node name="CombatHud" type="Control" parent="CombatUI" node_paths=PackedStringArray("health_bar", "mana_bar", "health_label", "mana_label", "enemy_health_bar", "enemy_health_label")]
+[node name="CombatHud" type="Control" parent="CombatUI" node_paths=PackedStringArray("health_bar", "mana_bar", "health_label", "mana_label", "target_name_label")]
 unique_name_in_owner = true
 layout_mode = 3
 anchors_preset = 15
@@ -58,69 +60,48 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4_0x2iq")
-health_bar = NodePath("HealthBar")
-mana_bar = NodePath("ManaBar")
-health_label = NodePath("HealthLabel")
-mana_label = NodePath("ManaLabel")
-enemy_health_bar = NodePath("EnemyHealthBar")
-enemy_health_label = NodePath("EnemyHealthLabel")
+health_bar = NodePath("TargetFrame/TargetVBox/HealthBar")
+mana_bar = NodePath("TargetFrame/TargetVBox/ManaBar")
+health_label = NodePath("TargetFrame/TargetVBox/HealthLabel")
+mana_label = NodePath("TargetFrame/TargetVBox/ManaLabel")
+target_name_label = NodePath("TargetFrame/TargetVBox/TargetNameLabel")
 
-[node name="HealthBar" type="ProgressBar" parent="CombatUI/CombatHud"]
+[node name="TargetFrame" type="PanelContainer" parent="CombatUI/CombatHud"]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 280.0
-offset_bottom = 40.0
+offset_right = 320.0
+offset_bottom = 120.0
+
+[node name="TargetVBox" type="VBoxContainer" parent="CombatUI/CombatHud/TargetFrame"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TargetNameLabel" type="Label" parent="CombatUI/CombatHud/TargetFrame/TargetVBox"]
+unique_name_in_owner = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "TARGET"
+
+[node name="HealthBar" type="ProgressBar" parent="CombatUI/CombatHud/TargetFrame/TargetVBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
 show_percentage = false
 
-[node name="ManaBar" type="ProgressBar" parent="CombatUI/CombatHud"]
-layout_mode = 0
-offset_left = 16.0
-offset_top = 48.0
-offset_right = 280.0
-offset_bottom = 72.0
-show_percentage = false
-
-[node name="HealthLabel" type="Label" parent="CombatUI/CombatHud"]
-layout_mode = 0
-offset_left = 288.0
-offset_top = 16.0
-offset_right = 420.0
-offset_bottom = 40.0
+[node name="HealthLabel" type="Label" parent="CombatUI/CombatHud/TargetFrame/TargetVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "HP: —/—"
 
-[node name="ManaLabel" type="Label" parent="CombatUI/CombatHud"]
-layout_mode = 0
-offset_left = 288.0
-offset_top = 48.0
-offset_right = 420.0
-offset_bottom = 72.0
-text = "MP: —/—"
-
-[node name="EnemyHealthBar" type="ProgressBar" parent="CombatUI/CombatHud"]
-layout_mode = 0
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -420.0
-offset_top = 16.0
-offset_right = -156.0
-offset_bottom = 40.0
-grow_horizontal = 0
+[node name="ManaBar" type="ProgressBar" parent="CombatUI/CombatHud/TargetFrame/TargetVBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
 show_percentage = false
 
-[node name="EnemyHealthLabel" type="Label" parent="CombatUI/CombatHud"]
-layout_mode = 0
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -148.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = 40.0
-grow_horizontal = 0
-text = "ENEMY HP: —/—"
-horizontal_alignment = 2
+[node name="ManaLabel" type="Label" parent="CombatUI/CombatHud/TargetFrame/TargetVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "MP: —/—"
 
 [node name="EndTurnButton" type="Button" parent="CombatUI/CombatHud"]
 unique_name_in_owner = true

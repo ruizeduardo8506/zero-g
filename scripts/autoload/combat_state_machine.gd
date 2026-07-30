@@ -1,7 +1,7 @@
 extends Node
 
 ## Global combat phase controller (autoload).
-## Owns turn/phase flow, Fatigue → player entity, and card Action Resolution.
+## Owns turn/phase flow, Fatigue → player entity, and card Action Resolution / targeting.
 
 const CombatEntityScript = preload("res://scripts/combat/combat_entity.gd")
 
@@ -11,6 +11,7 @@ enum Phase {
 	TURN_START,
 	PLAYER_MAIN,
 	PLAYER_TARGETING,
+	WAITING_FOR_TARGET,
 	ENEMY_TURN,
 	TURN_END,
 	RESOLUTION,
@@ -18,7 +19,7 @@ enum Phase {
 	DEFEAT,
 }
 
-## Director alias: player may act during PLAYER_MAIN (player turn).
+## Director alias: PLAYER_MAIN is the actionable player turn.
 const PLAYER_GROUP: String = "player"
 const ENEMIES_GROUP: String = "enemies"
 const PLAYER_ENTITY_GROUP: String = "player_combat_entity"
@@ -32,6 +33,9 @@ var is_player_turn: bool = true
 ## Phase-2 player CombatEntity registered by the combat scene / controller.
 var active_player_entity: Node2D = null
 
+## Card awaiting a clicked target during WAITING_FOR_TARGET.
+var pending_card: Resource = null
+
 var _applying_fatigue: bool = false
 var _resolving_card: bool = false
 
@@ -39,6 +43,7 @@ var _resolving_card: bool = false
 func _ready() -> void:
 	EventBus.fatigue_triggered.connect(_on_fatigue_triggered)
 	EventBus.card_played.connect(_on_card_played)
+	EventBus.entity_clicked.connect(_on_entity_clicked)
 
 
 ## Call when a party CombatEntity enters combat (or leaves — pass null).
@@ -49,16 +54,19 @@ func set_active_player_entity(entity: Node2D) -> void:
 func start_combat() -> void:
 	turn_number = 0
 	is_player_turn = true
+	pending_card = null
 	_transition_to(Phase.SETUP)
 
 
 func end_combat(victory: bool) -> void:
+	pending_card = null
 	_transition_to(Phase.VICTORY if victory else Phase.DEFEAT)
 
 
 func begin_player_turn() -> void:
 	is_player_turn = true
 	turn_number += 1
+	pending_card = null
 	_transition_to(Phase.TURN_START)
 
 
@@ -67,15 +75,17 @@ func enter_player_main() -> void:
 
 
 func enter_targeting() -> void:
-	_transition_to(Phase.PLAYER_TARGETING)
+	_transition_to(Phase.WAITING_FOR_TARGET)
 
 
 func end_player_turn() -> void:
+	pending_card = null
 	_transition_to(Phase.TURN_END)
 
 
 func begin_enemy_turn() -> void:
 	is_player_turn = false
+	pending_card = null
 	_transition_to(Phase.ENEMY_TURN)
 
 
@@ -83,56 +93,70 @@ func reset() -> void:
 	turn_number = 0
 	is_player_turn = true
 	active_player_entity = null
+	pending_card = null
 	_transition_to(Phase.INACTIVE)
 
 
-## Action Resolver — spend player mana and apply card damage / healing.
-func _on_card_played(card_data: Resource, target: Node) -> void:
+## Card committed from hand — enter targeting instead of auto-resolving.
+func _on_card_played(card_data: Resource, _target: Node) -> void:
 	if _resolving_card:
 		return
-	# PLAYER_MAIN is the actionable player-turn phase (Director: PLAYER_TURN).
 	if current_phase != Phase.PLAYER_MAIN:
 		return
 	if card_data == null:
 		return
 
+	pending_card = card_data
+	_transition_to(Phase.WAITING_FOR_TARGET)
+	EventBus.targeting_started.emit(card_data)
+	var card_name: String = _resolve_card_name(card_data)
+	EventBus.combat_log.emit("Select a target for %s." % card_name)
+
+
+## Manual targeting — resolve pending card against the clicked combatant.
+func _on_entity_clicked(target: CombatEntity) -> void:
+	if current_phase != Phase.WAITING_FOR_TARGET:
+		return
+	if pending_card == null or target == null:
+		return
+	if _resolving_card:
+		return
+
 	_resolving_card = true
+	var card: Resource = pending_card
 	var player: Node = _find_player_entity()
 	if player == null or not player.has_method("spend_mana"):
 		push_warning("CombatStateMachine: no player entity in group '%s'" % PLAYER_GROUP)
 		_resolving_card = false
 		return
 
-	var mana_cost: int = _resolve_mana_cost(card_data, player)
+	var mana_cost: int = _resolve_mana_cost(card, player)
 	if not player.call("spend_mana", mana_cost):
 		print("Not enough mana!")
 		EventBus.combat_log.emit("Not enough mana!")
 		_resolving_card = false
+		pending_card = null
+		_transition_to(Phase.PLAYER_MAIN)
 		return
 
-	var heal: int = _resolve_card_heal(card_data)
-	if heal > 0 and player.has_method("heal"):
-		player.call("heal", heal)
-		EventBus.combat_log.emit("Healed %d HP." % heal)
+	# Keep ManaPool / HUD in sync with entity mana after spend.
+	if "current_mana" in player and "max_mana" in player:
+		EventBus.mana_updated.emit(int(player.get("current_mana")), int(player.get("max_mana")))
 
-	var damage: int = _resolve_card_damage(card_data)
-	if damage > 0:
-		var resolved_target: Node = target
-		if resolved_target == null or not is_instance_valid(resolved_target):
-			resolved_target = _find_default_enemy()
-		if resolved_target == null or not resolved_target.has_method("take_damage"):
-			push_warning("CombatStateMachine: no valid enemy target for card")
-			_resolving_card = false
-			return
-		resolved_target.call("take_damage", damage)
-		var target_id: String = (
-			str(resolved_target.get("entity_id"))
-			if "entity_id" in resolved_target
-			else resolved_target.name
-		)
-		EventBus.combat_log.emit("Dealt %d damage to %s." % [damage, target_id])
+	var heal: int = _resolve_card_heal(card)
+	if heal > 0 and target.has_method("heal"):
+		target.heal(heal)
+		EventBus.combat_log.emit("Healed %s for %d HP." % [target.entity_id, heal])
 
+	var damage: int = _resolve_card_damage(card)
+	if damage > 0 and target.has_method("take_damage"):
+		target.take_damage(damage)
+		EventBus.combat_log.emit("Dealt %d damage to %s." % [damage, target.entity_id])
+
+	pending_card = null
 	_resolving_card = false
+	# Return to player turn (PLAYER_MAIN).
+	_transition_to(Phase.PLAYER_MAIN)
 
 
 func _resolve_mana_cost(card_data: Resource, player: Node) -> int:
@@ -157,6 +181,14 @@ func _resolve_card_heal(card_data: Resource) -> int:
 	return 0
 
 
+func _resolve_card_name(card_data: Resource) -> String:
+	if "display_name" in card_data:
+		return str(card_data.get("display_name"))
+	if "card_name" in card_data:
+		return str(card_data.get("card_name"))
+	return "card"
+
+
 func _find_player_entity() -> Node:
 	if active_player_entity != null and is_instance_valid(active_player_entity):
 		return active_player_entity
@@ -166,23 +198,9 @@ func _find_player_entity() -> Node:
 	var players: Array[Node] = tree.get_nodes_in_group(PLAYER_GROUP)
 	if not players.is_empty():
 		return players[0]
-	# Legacy fatigue group fallback.
 	var legacy: Array[Node] = tree.get_nodes_in_group(PLAYER_ENTITY_GROUP)
 	if not legacy.is_empty():
 		return legacy[0]
-	return null
-
-
-func _find_default_enemy() -> Node:
-	var tree: SceneTree = get_tree()
-	if tree == null:
-		return null
-	var enemies: Array[Node] = tree.get_nodes_in_group(ENEMIES_GROUP)
-	for enemy: Node in enemies:
-		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.call("is_alive"):
-			return enemy
-		if is_instance_valid(enemy) and enemy.has_method("take_damage"):
-			return enemy
 	return null
 
 
