@@ -50,8 +50,7 @@ func play_card(card: Resource, target: Node) -> void:
 		return
 	hand.remove_at(index)
 	burn_pile.append(card)
-	var target_name: String = target.name if is_instance_valid(target) else ""
-	EventBus.card_played.emit(card, target_name)
+	EventBus.card_played.emit(card, target)
 
 
 func _reshuffle_burn_pile() -> void:

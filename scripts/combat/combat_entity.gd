@@ -19,8 +19,14 @@ var current_mana: int = 0
 func _ready() -> void:
 	if entity_id.is_empty():
 		entity_id = name
-	current_hp = maxi(0, max_hp)
-	current_mana = maxi(0, max_mana)
+	current_hp = max_hp
+	current_mana = max_mana
+	# Defer so CombatHud / other subscribers finish connecting in _ready first.
+	call_deferred("_broadcast_stats")
+
+
+## Push current HP / mana to EventBus (spawn init and external resync).
+func _broadcast_stats() -> void:
 	EventBus.health_changed.emit(entity_id, current_hp, max_hp)
 	EventBus.mana_changed.emit(entity_id, current_mana, max_mana)
 
