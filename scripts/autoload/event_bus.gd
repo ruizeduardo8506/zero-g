@@ -33,3 +33,7 @@ signal entity_clicked(entity: CombatEntity)
 signal turn_started(turn_number: int, active_combatant_name: String)
 signal turn_ended(turn_number: int)
 signal phase_changed(previous: int, current: int)
+
+# OVERWORLD / EXPLORATION
+## Invisible random encounter after enough overworld travel (GDD § World & Exploration).
+signal random_encounter_triggered()
