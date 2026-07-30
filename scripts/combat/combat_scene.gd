@@ -41,8 +41,11 @@ func _on_phase_changed(_previous: int, _current: int) -> void:
 	var live_phase: int = CombatStateMachine.current_phase
 	var phase_name: String = CombatStateMachine.Phase.keys()[live_phase]
 	_hud.update_turn(CombatStateMachine.turn_number, phase_name)
-	var is_player_main: bool = live_phase == CombatStateMachine.Phase.PLAYER_MAIN
-	_hud.set_interaction_enabled(is_player_main)
+	var can_act: bool = (
+		live_phase == CombatStateMachine.Phase.PLAYER_MAIN
+		and not CombatStateMachine.is_combat_over()
+	)
+	_hud.set_interaction_enabled(can_act)
 
 
 func _on_hand_updated(hand: Array[CardData]) -> void:

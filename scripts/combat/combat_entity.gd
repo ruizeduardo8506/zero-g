@@ -30,7 +30,8 @@ func _ready() -> void:
 	if entity_id.is_empty():
 		entity_id = name
 	current_hp = max_hp
-	current_mana = max_mana
+	# GDD: mana starts empty; +base_mana_regen at the start of each player turn.
+	current_mana = 0
 	_setup_click_area()
 	_spawn_entity_ui()
 	# Defer so CombatHud / other subscribers finish connecting in _ready first.

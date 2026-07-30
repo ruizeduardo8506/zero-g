@@ -48,6 +48,7 @@ func _ready() -> void:
 	EventBus.fatigue_triggered.connect(_on_fatigue_triggered)
 	EventBus.card_played.connect(_on_card_played)
 	EventBus.entity_clicked.connect(_on_entity_clicked)
+	EventBus.entity_died.connect(_on_entity_died)
 
 
 ## Call when a party CombatEntity enters combat (or leaves — pass null).
@@ -55,42 +56,94 @@ func set_active_player_entity(entity: Node2D) -> void:
 	active_player_entity = entity
 
 
+func is_combat_over() -> bool:
+	return current_phase == Phase.VICTORY or current_phase == Phase.DEFEAT
+
+
 func start_combat() -> void:
 	turn_number = 0
 	is_player_turn = true
 	_clear_targeting_state()
 	_transition_to(Phase.SETUP)
+	# Opening hand + mana for the first player turn (GDD: draw 5).
+	_prepare_player_turn_resources()
 
 
 func end_combat(victory: bool) -> void:
-	_clear_targeting_state()
-	_transition_to(Phase.VICTORY if victory else Phase.DEFEAT)
+	_finish_combat(victory)
 
 
 func begin_player_turn() -> void:
+	if is_combat_over():
+		return
 	is_player_turn = true
 	turn_number += 1
 	_clear_targeting_state()
 	_transition_to(Phase.TURN_START)
 
 
+## After the enemy phase — regen mana, draw 5, then start the player turn.
+func end_enemy_turn() -> void:
+	if is_combat_over():
+		return
+	_prepare_player_turn_resources()
+	begin_player_turn()
+
+
 func enter_player_main() -> void:
+	if is_combat_over():
+		return
 	_transition_to(Phase.PLAYER_MAIN)
 
 
 func enter_targeting() -> void:
+	if is_combat_over():
+		return
 	_transition_to(Phase.WAITING_FOR_TARGET)
 
 
 func end_player_turn() -> void:
+	if is_combat_over():
+		return
+	DeckManager.discard_hand()
 	_clear_targeting_state()
 	_transition_to(Phase.TURN_END)
 
 
 func begin_enemy_turn() -> void:
+	if is_combat_over():
+		return
 	is_player_turn = false
 	_clear_targeting_state()
 	_transition_to(Phase.ENEMY_TURN)
+
+
+## Regen mana on all party CombatEntities, then draw the standard hand size.
+func _prepare_player_turn_resources() -> void:
+	_regenerate_player_mana()
+	DeckManager.draw_cards(GameConstants.HAND_START_SIZE)
+
+
+func _regenerate_player_mana() -> void:
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	var players: Array[Node] = tree.get_nodes_in_group(PLAYER_GROUP)
+	for node: Node in players:
+		if is_instance_valid(node) and node.has_method("regenerate_mana"):
+			node.call("regenerate_mana")
+			if "current_mana" in node and "max_mana" in node:
+				EventBus.mana_updated.emit(
+					int(node.get("current_mana")),
+					int(node.get("max_mana")),
+				)
+
+
+## Abort an in-progress target selection and return to PLAYER_MAIN.
+func cancel_pending_play() -> void:
+	if current_phase != Phase.WAITING_FOR_TARGET:
+		return
+	_cancel_pending_card()
 
 
 func reset() -> void:
@@ -102,6 +155,8 @@ func reset() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if is_combat_over():
+		return
 	if current_phase != Phase.WAITING_FOR_TARGET:
 		return
 	if pending_card == null:
@@ -126,7 +181,7 @@ func _input(event: InputEvent) -> void:
 
 ## Card committed from hand.
 func _on_card_played(card_data: Resource, target: Node) -> void:
-	if _resolving_card:
+	if is_combat_over() or _resolving_card:
 		return
 	if current_phase != Phase.PLAYER_MAIN:
 		return
@@ -150,9 +205,23 @@ func _on_card_played(card_data: Resource, target: Node) -> void:
 		_resolve_card_on_target(target)
 		return
 
-	# Fallback click-to-target (no drag).
+	# Click-to-play with no drag target: auto-cast when only one valid target
+	# (prototype often has a single enemy), otherwise wait for a click.
+	_populate_valid_targets(card_data)
 	_transition_to(Phase.WAITING_FOR_TARGET)
+	if valid_targets.size() == 1:
+		_resolve_card_on_target(valid_targets[0])
+		return
+
 	EventBus.targeting_started.emit(card_data)
+	if valid_targets.is_empty():
+		EventBus.combat_log.emit("No valid targets for %s." % _resolve_card_name(card_data))
+		# Defer restore until card_played listeners finish consuming.
+		var cancelled: Resource = pending_card
+		_clear_targeting_state()
+		_transition_to(Phase.PLAYER_MAIN)
+		call_deferred("_emit_play_cancelled", cancelled)
+		return
 	EventBus.combat_log.emit("Select a target for %s." % _resolve_card_name(card_data))
 
 
@@ -223,8 +292,16 @@ func _cancel_pending_card() -> void:
 		EventBus.combat_log.emit("Cancelled %s." % _resolve_card_name(cancelled))
 
 
+func _emit_play_cancelled(card: Resource) -> void:
+	if card == null:
+		return
+	EventBus.card_play_cancelled.emit(card)
+
+
 ## Manual mouse/touch click targeting while WAITING_FOR_TARGET.
 func _on_entity_clicked(target: CombatEntity) -> void:
+	if is_combat_over():
+		return
 	if current_phase != Phase.WAITING_FOR_TARGET:
 		return
 	if pending_card == null or target == null:
@@ -233,6 +310,25 @@ func _on_entity_clicked(target: CombatEntity) -> void:
 	if InputManager.is_using_controller:
 		return
 	_resolve_card_on_target(target)
+
+
+func _on_entity_died(entity_id: String) -> void:
+	if is_combat_over():
+		return
+	if entity_id == "player":
+		print("Game Over!")
+		_finish_combat(false)
+	elif entity_id == "enemy":
+		print("You Win!")
+		_finish_combat(true)
+
+
+func _finish_combat(victory: bool) -> void:
+	_clear_targeting_state()
+	_resolving_card = false
+	_transition_to(Phase.VICTORY if victory else Phase.DEFEAT)
+	EventBus.combat_log.emit("You Win!" if victory else "Game Over!")
+	EventBus.combat_ended.emit(victory)
 
 
 func _resolve_card_on_target(target: Node) -> void:
@@ -256,6 +352,8 @@ func _resolve_card_on_target(target: Node) -> void:
 		_resolving_card = false
 		_clear_targeting_state()
 		_transition_to(Phase.PLAYER_MAIN)
+		# Defer so card_played listeners finish consuming the card first.
+		call_deferred("_emit_play_cancelled", card)
 		return
 
 	if "current_mana" in player and "max_mana" in player:
@@ -274,7 +372,8 @@ func _resolve_card_on_target(target: Node) -> void:
 
 	_clear_targeting_state()
 	_resolving_card = false
-	_transition_to(Phase.PLAYER_MAIN)
+	if not is_combat_over():
+		_transition_to(Phase.PLAYER_MAIN)
 
 
 func _clear_targeting_state() -> void:

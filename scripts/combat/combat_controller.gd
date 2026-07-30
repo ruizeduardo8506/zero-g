@@ -22,50 +22,49 @@ func _ready() -> void:
 
 func start_combat(deck_cards: Array[CardData]) -> void:
 	player.reset_for_combat(deck_cards)
+	var resources: Array[Resource] = []
+	for card: CardData in deck_cards:
+		resources.append(card)
+	DeckManager.initialize_combat_deck(resources)
 	EventBus.combat_started.emit()
 	CombatStateMachine.start_combat()
 
 
 func try_play_card(card: CardData) -> bool:
+	if CombatStateMachine.is_combat_over():
+		return false
+	# Switching cards mid-target cancels the pending play and restores it.
+	if CombatStateMachine.current_phase == CombatStateMachine.Phase.WAITING_FOR_TARGET:
+		CombatStateMachine.cancel_pending_play()
 	if not _input_enabled:
 		return false
 	if CombatStateMachine.current_phase != CombatStateMachine.Phase.PLAYER_MAIN:
+		EventBus.combat_log.emit("Cannot play cards right now.")
 		return false
 	if card.is_dormant:
 		EventBus.combat_log.emit("Cannot play %s." % card.display_name)
 		return false
-	# Mana spend is owned by CombatStateMachine Action Resolver on the Player entity.
-	# Pre-check entity mana (or ManaPool fallback) before emitting card_played.
 	if not _can_afford_via_entity(card):
-		EventBus.combat_log.emit("Cannot play %s." % card.display_name)
+		EventBus.combat_log.emit("Not enough mana for %s." % card.display_name)
 		return false
-	if player.deck.hand.find(card) < 0:
+	if DeckManager.hand.find(card) < 0:
 		return false
 	EventBus.card_played.emit(card, null)
-	# Hand consumption is handled in _on_event_bus_card_played.
 	return true
 
 
 func _on_event_bus_card_played(card: Resource, _target: Node) -> void:
-	if not (card is CardData):
-		return
-	var card_data: CardData = card as CardData
-	if player.deck.hand.find(card_data) < 0:
-		return
-	if not player.deck.play_card(card_data):
+	if not DeckManager.consume_card(card):
 		return
 	player.cards_played_this_turn += 1
 
 
 func _on_card_play_cancelled(card: Resource) -> void:
-	if not (card is CardData):
-		return
-	var card_data: CardData = card as CardData
-	if not player.deck.return_card_to_hand(card_data):
+	if not DeckManager.return_card_to_hand(card):
 		return
 	player.cards_played_this_turn = maxi(0, player.cards_played_this_turn - 1)
-	# Re-spawn hand visual for the restored card.
-	EventBus.card_drawn.emit(card_data, player.display_name)
+	_sync_mana_pool_from_player_entity()
+	EventBus.card_drawn.emit(card, player.display_name)
 
 
 func _can_afford_via_entity(card: CardData) -> bool:
@@ -117,56 +116,67 @@ func _on_phase_changed(previous: int, current: int) -> void:
 			_handle_turn_end()
 		CombatStateMachine.Phase.ENEMY_TURN:
 			_handle_enemy_turn()
+		CombatStateMachine.Phase.VICTORY, CombatStateMachine.Phase.DEFEAT:
+			_handle_combat_over()
 
 
 func _handle_setup() -> void:
-	player.deck.draw_cards(GameConstants.HAND_START_SIZE)
-	EventBus.combat_log.emit("Combat started. Drew %d cards." % GameConstants.HAND_START_SIZE)
+	EventBus.combat_log.emit("Combat started.")
 	CombatStateMachine.begin_player_turn()
 
 
 func _handle_turn_start() -> void:
-	player.begin_turn()
-	_sync_player_entity_mana_from_pool()
+	if CombatStateMachine.is_combat_over():
+		return
+	player.cards_played_this_turn = 0
+	_sync_mana_pool_from_player_entity()
 	EventBus.turn_started.emit(CombatStateMachine.turn_number, player.display_name)
-	EventBus.combat_log.emit("Turn %d — mana regenerated." % CombatStateMachine.turn_number)
+	EventBus.combat_log.emit("Turn %d — mana regenerated, hand drawn." % CombatStateMachine.turn_number)
 	CombatStateMachine.enter_player_main()
 
 
 func _sync_player_entity_mana_from_pool() -> void:
-	var entity: Node = _get_player_entity()
-	if entity == null:
-		return
-	if "current_mana" in entity:
-		entity.set("current_mana", player.mana.current)
-	if "max_mana" in entity:
-		entity.set("max_mana", player.mana.cap)
-	if entity.has_method("_broadcast_stats"):
-		entity.call("_broadcast_stats")
-	elif entity.has_method("regenerate_mana"):
-		# Fallback: at least push EventBus mana if broadcast helper missing.
-		EventBus.mana_changed.emit("player", player.mana.current, player.mana.cap)
+	# Mana regen is owned by CombatStateMachine → CombatEntity.regenerate_mana().
+	_sync_mana_pool_from_player_entity()
 
 
 func _handle_player_main() -> void:
+	if CombatStateMachine.is_combat_over():
+		_input_enabled = false
+		return
 	_input_enabled = true
+	_sync_mana_pool_from_player_entity()
 	EventBus.combat_log.emit("Select a card or end your turn.")
 
 
 func _handle_turn_end() -> void:
+	if CombatStateMachine.is_combat_over():
+		return
 	EventBus.turn_ended.emit(CombatStateMachine.turn_number)
 	CombatStateMachine.begin_enemy_turn()
 
 
 func _handle_enemy_turn() -> void:
+	if CombatStateMachine.is_combat_over():
+		return
 	var enemy: Node = get_parent().get_node_or_null("Enemy")
-	var player_entity: Node = get_parent().get_node_or_null("Player")
-	if enemy != null and enemy.has_method("take_turn") and enemy.has_method("is_alive") and enemy.call("is_alive"):
-		enemy.call("take_turn", player_entity)
+	if (
+		enemy != null
+		and enemy.has_method("take_turn")
+		and enemy.has_method("is_alive")
+		and enemy.call("is_alive")
+	):
+		# EnemyAI.take_turn awaits think/lunge and calls end_enemy_turn itself.
+		await enemy.take_turn()
 	else:
 		EventBus.combat_log.emit("Enemy turn (stub).")
-	await get_tree().create_timer(0.6).timeout
-	CombatStateMachine.begin_player_turn()
+		await get_tree().create_timer(0.6).timeout
+		if not CombatStateMachine.is_combat_over():
+			CombatStateMachine.end_enemy_turn()
+
+
+func _handle_combat_over() -> void:
+	_input_enabled = false
 
 
 func _on_hand_changed(hand: Array[CardData]) -> void:
