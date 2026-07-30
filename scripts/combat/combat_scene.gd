@@ -12,14 +12,13 @@ func _ready() -> void:
 	if _player_entity != null:
 		CombatStateMachine.set_active_player_entity(_player_entity)
 	_controller.start_combat(StarterDeck.create_orphan_deck())
-	# After CombatEntity's deferred spawn broadcast, resync bars to live combatant pools.
-	call_deferred("_resync_player_bars")
+	# Focus target frame on the player once EntityUI / HUD have finished _ready.
+	call_deferred("_focus_default_target")
 
 
-func _resync_player_bars() -> void:
-	var combatant: Combatant = _controller.player
-	EventBus.health_changed.emit("player", combatant.current_hp, combatant.max_hp)
-	EventBus.mana_changed.emit("player", combatant.mana.current, combatant.mana.cap)
+func _focus_default_target() -> void:
+	if _player_entity != null:
+		EventBus.target_hovered.emit(_player_entity)
 
 
 func _wire_signals() -> void:

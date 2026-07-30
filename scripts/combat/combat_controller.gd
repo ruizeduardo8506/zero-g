@@ -16,6 +16,8 @@ func _ready() -> void:
 	player.mana.mana_changed.connect(_on_mana_changed)
 	player.deck.card_drawn.connect(_on_card_drawn)
 	player.deck.card_played.connect(_on_card_played)
+	EventBus.card_played.connect(_on_event_bus_card_played)
+	EventBus.card_play_cancelled.connect(_on_card_play_cancelled)
 
 
 func start_combat(deck_cards: Array[CardData]) -> void:
@@ -40,12 +42,30 @@ func try_play_card(card: CardData) -> bool:
 	if player.deck.hand.find(card) < 0:
 		return false
 	EventBus.card_played.emit(card, null)
-	if not player.deck.play_card(card):
-		return false
-	_sync_mana_pool_from_player_entity()
-	player.cards_played_this_turn += 1
-	EventBus.combat_log.emit("Played %s (-%d mana)." % [card.display_name, card.mana_cost])
+	# Hand consumption is handled in _on_event_bus_card_played.
 	return true
+
+
+func _on_event_bus_card_played(card: Resource, _target: Node) -> void:
+	if not (card is CardData):
+		return
+	var card_data: CardData = card as CardData
+	if player.deck.hand.find(card_data) < 0:
+		return
+	if not player.deck.play_card(card_data):
+		return
+	player.cards_played_this_turn += 1
+
+
+func _on_card_play_cancelled(card: Resource) -> void:
+	if not (card is CardData):
+		return
+	var card_data: CardData = card as CardData
+	if not player.deck.return_card_to_hand(card_data):
+		return
+	player.cards_played_this_turn = maxi(0, player.cards_played_this_turn - 1)
+	# Re-spawn hand visual for the restored card.
+	EventBus.card_drawn.emit(card_data, player.display_name)
 
 
 func _can_afford_via_entity(card: CardData) -> bool:
