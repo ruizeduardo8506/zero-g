@@ -3,8 +3,8 @@ extends Node2D
 
 ## Base class for all combat participants (party members and enemies).
 ## Routes HP / mana updates through EventBus so UI stays decoupled (GDD Phase 2).
-## Party members should be in group "player_combat_entity" (or registered via
-## CombatStateMachine.set_active_player_entity) so Fatigue mana-burn can find them.
+## Party members should be in groups "player" and "player_combat_entity" (or registered via
+## CombatStateMachine.set_active_player_entity) so Fatigue mana-burn and Action Resolver can find them.
 
 # GDD defaults: mana regen 5 / turn, mana cap 20.
 @export var entity_id: String = ""

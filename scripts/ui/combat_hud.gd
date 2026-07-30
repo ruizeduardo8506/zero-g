@@ -1,11 +1,16 @@
 class_name CombatHud
 extends Control
 
-## Main combat canvas UI. Subscribes to EventBus for player HP / mana bars.
+## Main combat canvas UI. Subscribes to EventBus for player / enemy HP and mana bars.
 ## Phase-1 scaffold nodes (turn/hand/end-turn) are optional — resolve with
 ## get_node_or_null so bar-only HUD layouts do not crash on _ready.
 
 const PLAYER_ENTITY_ID: String = "player"
+const ENEMY_ENTITY_ID: String = "enemy"
+
+const HEALTH_FILL := Color(0.2, 0.8, 0.2, 1.0)
+const MANA_FILL := Color(0.2, 0.4, 0.9, 1.0)
+const ENEMY_HEALTH_FILL := Color(0.8, 0.2, 0.2, 1.0)
 
 ## Mana Burn flash (Fatigue) — brief red → gray → restore.
 const MANA_BURN_RED := Color(0.9, 0.2, 0.25, 1.0)
@@ -19,6 +24,8 @@ signal end_turn_pressed
 @export var mana_bar: ProgressBar
 @export var health_label: Label
 @export var mana_label: Label
+@export var enemy_health_bar: ProgressBar
+@export var enemy_health_label: Label
 
 var _turn_label: Label
 var _phase_label: Label
@@ -39,6 +46,8 @@ func _ready() -> void:
 	_log_label = get_node_or_null("%LogLabel") as Label
 	_hand_container = get_node_or_null("%HandContainer") as HandContainer
 	_end_turn_button = get_node_or_null("%EndTurnButton") as Button
+
+	_apply_bar_colors()
 
 	if _end_turn_button != null:
 		_end_turn_button.pressed.connect(func() -> void: end_turn_pressed.emit())
@@ -91,13 +100,18 @@ func _on_combat_log(message: String) -> void:
 
 
 func _on_health_changed(entity_id: String, new_hp: int, max_hp: int) -> void:
-	if entity_id != PLAYER_ENTITY_ID:
-		return
-	if health_bar != null:
-		health_bar.max_value = float(max_hp)
-		health_bar.value = float(new_hp)
-	if health_label != null:
-		health_label.text = "HP: %d/%d" % [new_hp, max_hp]
+	if entity_id == PLAYER_ENTITY_ID:
+		if health_bar != null:
+			health_bar.max_value = float(max_hp)
+			health_bar.value = float(new_hp)
+		if health_label != null:
+			health_label.text = "HP: %d/%d" % [new_hp, max_hp]
+	elif entity_id == ENEMY_ENTITY_ID:
+		if enemy_health_bar != null:
+			enemy_health_bar.max_value = float(max_hp)
+			enemy_health_bar.value = float(new_hp)
+		if enemy_health_label != null:
+			enemy_health_label.text = "ENEMY HP: %d/%d" % [new_hp, max_hp]
 
 
 func _on_mana_changed(entity_id: String, new_mana: int, max_mana: int) -> void:
@@ -112,6 +126,26 @@ func _on_mana_changed(entity_id: String, new_mana: int, max_mana: int) -> void:
 		_mana_status_label.text = "MANA %d / %d" % [new_mana, max_mana]
 	if new_mana == 0:
 		_play_mana_burn_feedback()
+
+
+func _apply_bar_colors() -> void:
+	_set_bar_fill(health_bar, HEALTH_FILL)
+	_set_bar_fill(mana_bar, MANA_FILL)
+	_set_bar_fill(enemy_health_bar, ENEMY_HEALTH_FILL)
+
+
+func _set_bar_fill(bar: ProgressBar, fill_color: Color) -> void:
+	if bar == null:
+		return
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill_color
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 1.0
+	style.content_margin_top = 1.0
+	style.content_margin_right = 1.0
+	style.content_margin_bottom = 1.0
+	bar.add_theme_stylebox_override("fill", style)
+	bar.show_percentage = false
 
 
 func _play_mana_burn_feedback() -> void:
