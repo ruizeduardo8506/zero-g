@@ -3,7 +3,8 @@ extends Control
 @onready var _controller: CombatController = %CombatController
 @onready var _hud: CombatHud = %CombatHud
 @onready var _hand_ui: HandUI = %HandManager
-@onready var _player_entity: Node2D = %PlayerEntity
+@onready var _player_entity: Node2D = %Player
+@onready var _enemy_entity: Node2D = %Enemy
 
 
 func _ready() -> void:

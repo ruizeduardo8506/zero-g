@@ -9,6 +9,10 @@ enum Rarity { TRASH, COMMON, MAGIC, RARE, EPIC, LEGENDARY, MYTHIC, UNIQUE }
 @export var display_name: String = ""
 @export_multiline var description: String = ""
 @export var mana_cost: int = 0
+## Raw damage dealt when the Action Resolver resolves this card (0 = non-damaging).
+@export var base_damage: int = 0
+## Healing applied to the caster/ally when resolved (0 = non-healing).
+@export var base_heal: int = 0
 @export var base_class: BaseClass = BaseClass.WARRIOR
 @export var rarity: Rarity = Rarity.COMMON
 @export var is_dormant: bool = false
