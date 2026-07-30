@@ -1,47 +1,97 @@
-[gd_scene load_steps=5 format=3 uid="uid://overworld3d_zero_g"]
+[gd_scene load_steps=9 format=3 uid="uid://0eyuqs2kw0lb"]
 
 [ext_resource type="Script" uid="uid://dwvoe652060vf" path="res://scripts/overworld/overworld_player_3d.gd" id="1_player"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_floor"]
-size = Vector3(40, 0.1, 40)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
-size = Vector3(40, 0.1, 40)
+[ext_resource type="Script" path="res://scripts/overworld/old_battlefield.gd" id="2_battlefield"]
+[ext_resource type="Texture2D" uid="uid://bk2ucejr2owm8" path="res://assets/sprites/isometric/miniature-dungeon/Characters/Male/Male_0_Idle0.png" id="3_player_tex"]
+[ext_resource type="Texture2D" path="res://assets/textures/retro-textures-fantasy/PNG/floor_ground_dirt.png" id="4_dirt"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.35
 height = 1.2
 
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+size = Vector3(80, 0.2, 80)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dirt"]
+albedo_color = Color(0.55, 0.45, 0.32, 1)
+albedo_texture = ExtResource("4_dirt")
+uv1_scale = Vector3(20, 20, 20)
+roughness = 0.95
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(80, 0.2, 80)
+
+[sub_resource type="Environment" id="Environment_battlefield"]
+background_mode = 1
+background_color = Color(0.35, 0.32, 0.28, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.65, 0.58, 0.5, 1)
+ambient_light_energy = 0.85
+tonemap_mode = 2
+fog_enabled = true
+fog_light_color = Color(0.5, 0.45, 0.38, 1)
+fog_density = 0.006
+fog_aerial_perspective = 0.2
+
 [node name="Overworld3D" type="Node3D"]
 
-[node name="Camera3D" type="Camera3D" parent="."]
-position = Vector3(10, 12, 10)
-rotation_degrees = Vector3(-45, 45, 0)
-projection = 1
-size = 12.0
-current = true
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_battlefield")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.8660254, -0.35355338, 0.35355338, 0, 0.70710677, 0.70710677, -0.5, -0.6123724, 0.6123724, 0, 8, 0)
+transform = Transform3D(0.8660254, -0.4330127, 0.25, 0, 0.5, 0.8660254, -0.5, -0.75, 0.4330127, 6, 18, 4)
+light_color = Color(1, 0.92, 0.78, 1)
+light_energy = 1.15
 shadow_enabled = true
+shadow_blur = 2.5
+directional_shadow_mode = 2
+light_angular_distance = 3.0
 
-[node name="Floor" type="StaticBody3D" parent="."]
+[node name="Ground" type="StaticBody3D" parent="."]
 
-[node name="FloorMesh" type="MeshInstance3D" parent="Floor"]
-mesh = SubResource("BoxMesh_floor")
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("BoxMesh_ground")
+surface_material_override/0 = SubResource("StandardMaterial3D_dirt")
 
-[node name="FloorCollision" type="CollisionShape3D" parent="Floor"]
-shape = SubResource("BoxShape3D_floor")
+[node name="GroundCollision" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="WorldGrid" type="GridMap" parent="."]
+cell_size = Vector3(1, 1, 1)
+
+[node name="Battlefield" type="Node3D" parent="."]
+script = ExtResource("2_battlefield")
+battlefield_seed = 1945
+radius = 28.0
+prop_scale = 3.5
+skeleton_count = 22
+weapon_count = 30
+shield_count = 18
+debris_count = 40
+landmark_count = 8
 
 [node name="Player" type="CharacterBody3D" parent="."]
 unique_name_in_owner = true
+position = Vector3(0, 0.5, 0)
 script = ExtResource("1_player")
 
 [node name="Sprite3D" type="Sprite3D" parent="Player"]
-pixel_size = 0.05
+position = Vector3(0, 0.9, 0)
+pixel_size = 0.04
 billboard = 1
+transparent = true
+alpha_cut = 2
 texture_filter = 0
+texture = ExtResource("3_player_tex")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
 shape = SubResource("CapsuleShape3D_player")
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+position = Vector3(14, 14, 14)
+rotation_degrees = Vector3(-35.264, 45, 0)
+projection = 1
+current = true
+size = 18.0
+far = 200.0

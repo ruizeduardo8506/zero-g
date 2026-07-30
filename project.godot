@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="ZeroG"
 config/description="Turn-based tactical RPG & deck-builder hybrid."
-run/main_scene="res://scenes/combat/CombatScene.tscn"
+run/main_scene="res://scenes/overworld/Overworld3D.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
