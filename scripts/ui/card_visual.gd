@@ -57,7 +57,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 func _gui_input(event: InputEvent) -> void:
 	if card_data == null:
 		return
-	# Click / tap selects card for manual targeting (drag uses _get_drag_data instead).
+	# Click / tap selects card for targeting (drag uses _get_drag_data instead).
 	if event is InputEventMouseButton:
 		var mouse: InputEventMouseButton = event
 		if not mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT:

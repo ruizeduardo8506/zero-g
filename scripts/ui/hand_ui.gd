@@ -11,6 +11,8 @@ signal card_play_requested(card_data: Resource)
 
 
 func _ready() -> void:
+	# Ignore empty container hits so world/entity clicks pass through.
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	EventBus.card_drawn.connect(_on_card_drawn)
 	EventBus.card_played.connect(_on_card_played)
 	EventBus.hand_discarded.connect(_on_hand_discarded)
