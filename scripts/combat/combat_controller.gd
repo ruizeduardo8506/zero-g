@@ -100,6 +100,7 @@ func _on_piles_changed(draw_count: int, burn_count: int) -> void:
 
 func _on_mana_changed(current: int, cap: int) -> void:
 	EventBus.mana_updated.emit(current, cap)
+	EventBus.mana_changed.emit("player", current, cap)
 
 
 func _on_card_drawn(card: CardData) -> void:

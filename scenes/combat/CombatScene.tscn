@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://csuc5acvyiclj" path="res://scripts/ui/combat_hud.gd" id="4_0x2iq"]
 [ext_resource type="Script" uid="uid://xxncavu0pv2i" path="res://scripts/ui/hand_ui.gd" id="5_i18os"]
 [ext_resource type="PackedScene" uid="uid://b1ul5tbo0r3r4" path="res://scenes/ui/common/card_visual.tscn" id="6_dqp6h"]
+[ext_resource type="Script" path="res://scripts/combat/combat_entity.gd" id="7_entity"]
 
 [node name="CombatScene" type="Control"]
 layout_mode = 3
@@ -28,6 +29,13 @@ color = Color(0.03, 0.05, 0.08, 1)
 [node name="CombatController" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("2")
+
+[node name="PlayerEntity" type="Node2D" parent="." groups=["player_combat_entity"]]
+unique_name_in_owner = true
+script = ExtResource("7_entity")
+entity_id = "player"
+max_hp = 100
+max_mana = 20
 
 [node name="CombatUI" type="CanvasLayer" parent="."]
 

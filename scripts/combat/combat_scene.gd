@@ -3,11 +3,22 @@ extends Control
 @onready var _controller: CombatController = %CombatController
 @onready var _hud: CombatHud = %CombatHud
 @onready var _hand_ui: HandUI = %HandManager
+@onready var _player_entity: Node2D = %PlayerEntity
 
 
 func _ready() -> void:
 	_wire_signals()
+	if _player_entity != null:
+		CombatStateMachine.set_active_player_entity(_player_entity)
 	_controller.start_combat(StarterDeck.create_orphan_deck())
+	# After CombatEntity's deferred spawn broadcast, resync bars to live combatant pools.
+	call_deferred("_resync_player_bars")
+
+
+func _resync_player_bars() -> void:
+	var combatant: Combatant = _controller.player
+	EventBus.health_changed.emit("player", combatant.current_hp, combatant.max_hp)
+	EventBus.mana_changed.emit("player", combatant.mana.current, combatant.mana.cap)
 
 
 func _wire_signals() -> void:
