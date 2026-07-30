@@ -7,7 +7,7 @@ signal stats_changed
 @export var max_hp: int = 100
 
 var current_hp: int = 100
-var deck: DeckManager = DeckManager.new()
+var deck: CombatantDeck = CombatantDeck.new()
 var mana: ManaPool = ManaPool.new()
 var cards_played_this_turn: int = 0
 

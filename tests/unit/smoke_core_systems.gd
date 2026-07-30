@@ -179,13 +179,13 @@ func _test_legacy_deck_helpers() -> void:
 	if not card.is_playable(1):
 		# default mana 0 may be playable; just ensure call works
 		pass
-	var deck := DeckManager.new()
+	var deck := CombatantDeck.new()
 	var mana := ManaPool.new()
 	var combatant := Combatant.new()
 	if card == null or deck == null or mana == null or combatant == null:
 		_fail("legacy helpers instantiate")
 		return
-	_ok("Legacy CardData/DeckManager/ManaPool/Combatant")
+	_ok("Legacy CardData/CombatantDeck/ManaPool/Combatant")
 
 
 func _test_load_main_scene() -> void:
