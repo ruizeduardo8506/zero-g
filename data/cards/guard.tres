@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/deck/card_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "guard"
+display_name = "Guard"
+description = "Guard — 1 mana, 6 shield"
+mana_cost = 1
+base_damage = 0
+base_heal = 0
+base_shield = 6
+base_class = 0
+rarity = 1
+card_type = 1
+damage_type = 0
+is_dormant = false
+drains_full_mana = false
+can_weapon_proc = false

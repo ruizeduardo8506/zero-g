@@ -40,3 +40,7 @@ mono_crash.*.json
 *.mobileprovision
 .env
 credentials.json
+
+# Local-only: not shipped with the game
+addons/
+gdd/Documentation/

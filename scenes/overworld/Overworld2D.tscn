@@ -1,0 +1,59 @@
+[gd_scene load_steps=6 format=3 uid="uid://overworld_2d_zero_g"]
+
+[ext_resource type="Script" path="res://scripts/overworld/overworld_2d.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/overworld/overworld_player_2d.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/world/interactable.gd" id="3"]
+[ext_resource type="PackedScene" uid="uid://exploration_hud_zero_g" path="res://scenes/ui/exploration/ExplorationHud.tscn" id="4"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hotspot"]
+size = Vector2(32, 32)
+
+[node name="Overworld2D" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+unique_name_in_owner = true
+
+[node name="Player" type="CharacterBody2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(320, 368)
+script = ExtResource("2")
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+zoom = Vector2(2.5, 2.5)
+position_smoothing_enabled = true
+
+[node name="ShackDoor" type="Area2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(320, 216)
+script = ExtResource("3")
+prompt_text = "Enter Heretic's Shack"
+interact_id = "shack_door"
+marker_color = Color(0.7, 0.55, 0.3, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ShackDoor"]
+shape = SubResource("RectangleShape2D_hotspot")
+
+[node name="EdwardNpc" type="Area2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(432, 304)
+script = ExtResource("3")
+prompt_text = "Talk to Edward"
+interact_id = "edward"
+marker_color = Color(0.55, 0.45, 0.75, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="EdwardNpc"]
+shape = SubResource("RectangleShape2D_hotspot")
+
+[node name="RiftPortal" type="Area2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(560, 80)
+script = ExtResource("3")
+prompt_text = "Enter Primal Rift"
+interact_id = "rift"
+marker_color = Color(0.65, 0.3, 0.85, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RiftPortal"]
+shape = SubResource("RectangleShape2D_hotspot")
+
+[node name="ExplorationHud" parent="." instance=ExtResource("4")]

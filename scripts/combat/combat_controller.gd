@@ -41,6 +41,9 @@ func try_play_card(card: CardData) -> bool:
 	if CombatStateMachine.current_phase != CombatStateMachine.Phase.PLAYER_MAIN:
 		EventBus.combat_log.emit("Cannot play cards right now.")
 		return false
+	if player.cards_played_this_turn >= GameConstants.OVERDRIVE_MAX_PLAYS:
+		EventBus.combat_log.emit("Overdrive limit reached this turn.")
+		return false
 	if card.is_dormant:
 		EventBus.combat_log.emit("Cannot play %s." % card.display_name)
 		return false
@@ -98,10 +101,90 @@ func _sync_mana_pool_from_player_entity() -> void:
 
 
 func end_player_turn() -> void:
-	if not _input_enabled:
+	if CombatStateMachine.is_combat_over():
+		return
+	# Ending the turn must work at 0 mana and while a card is waiting for a target.
+	if CombatStateMachine.current_phase == CombatStateMachine.Phase.WAITING_FOR_TARGET:
+		CombatStateMachine.cancel_pending_play()
+	if CombatStateMachine.current_phase != CombatStateMachine.Phase.PLAYER_MAIN:
 		return
 	_input_enabled = false
 	CombatStateMachine.end_player_turn()
+
+
+func try_physical_attack() -> void:
+	if not _input_enabled or CombatStateMachine.is_combat_over():
+		return
+	if CombatStateMachine.current_phase != CombatStateMachine.Phase.PLAYER_MAIN:
+		return
+	if player.cards_played_this_turn >= GameConstants.OVERDRIVE_MAX_PLAYS:
+		EventBus.combat_log.emit("Overdrive limit reached this turn.")
+		return
+	var target: Node = _first_living_enemy()
+	if target == null:
+		EventBus.combat_log.emit("No enemies to strike.")
+		return
+	player.cards_played_this_turn += 1
+	if target.has_method("take_damage"):
+		target.call("take_damage", GameConstants.PHYSICAL_ATTACK_DAMAGE)
+	var target_id: String = str(target.get("entity_id")) if "entity_id" in target else target.name
+	EventBus.combat_log.emit("Physical hit on %s for %d." % [target_id, GameConstants.PHYSICAL_ATTACK_DAMAGE])
+	if randf() <= GameConstants.PHYSICAL_PROC_CHANCE:
+		_proc_deck_card(target)
+	EventBus.piles_updated.emit(DeckManager.draw_pile.size(), DeckManager.burn_pile.size())
+	EventBus.hand_updated.emit(DeckManager.get_hand_cards())
+
+
+func try_burn_revive() -> void:
+	if not _input_enabled or CombatStateMachine.is_combat_over():
+		return
+	if CombatStateMachine.current_phase != CombatStateMachine.Phase.PLAYER_MAIN:
+		return
+	if DeckManager.burn_pile.is_empty():
+		EventBus.combat_log.emit("Burn pile is empty.")
+		return
+	if DeckManager.hand.size() >= GameConstants.HAND_MAX_SIZE:
+		EventBus.combat_log.emit("Hand is full.")
+		return
+	var entity: Node = _get_player_entity()
+	if entity == null or not entity.has_method("spend_mana"):
+		return
+	if not bool(entity.call("spend_mana", GameConstants.BURN_REVIVE_MANA_COST)):
+		EventBus.combat_log.emit("Not enough mana to revive a burned card.")
+		return
+	var card: Resource = DeckManager.revive_from_burn()
+	if card == null:
+		EventBus.combat_log.emit("Could not revive a card.")
+		return
+	_sync_mana_pool_from_player_entity()
+	EventBus.combat_log.emit("Revived %s from the burn pile." % str(card.get("display_name")))
+
+
+func _first_living_enemy() -> Node:
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return null
+	for node: Node in tree.get_nodes_in_group("enemies"):
+		if is_instance_valid(node) and node.has_method("is_alive") and bool(node.call("is_alive")):
+			return node
+	return null
+
+
+func _proc_deck_card(target: Node) -> void:
+	var pool: Array[Resource] = []
+	for card: Resource in DeckManager.hand:
+		pool.append(card)
+	for card: Resource in DeckManager.draw_pile:
+		pool.append(card)
+	if pool.is_empty():
+		return
+	var card: Resource = pool[randi() % pool.size()]
+	var damage: int = int(card.get("base_damage")) if "base_damage" in card else 0
+	if damage > 0 and target.has_method("take_damage"):
+		target.call("take_damage", damage)
+		EventBus.combat_log.emit(
+			"Weapon proc: %s deals %d at 0 mana." % [str(card.get("display_name")), damage]
+		)
 
 
 func _on_phase_changed(previous: int, current: int) -> void:
@@ -159,20 +242,19 @@ func _handle_turn_end() -> void:
 func _handle_enemy_turn() -> void:
 	if CombatStateMachine.is_combat_over():
 		return
-	var enemy: Node = get_parent().get_node_or_null("Enemy")
-	if (
-		enemy != null
-		and enemy.has_method("take_turn")
-		and enemy.has_method("is_alive")
-		and enemy.call("is_alive")
-	):
-		# EnemyAI.take_turn awaits think/lunge and calls end_enemy_turn itself.
-		await enemy.take_turn()
-	else:
-		EventBus.combat_log.emit("Enemy turn (stub).")
-		await get_tree().create_timer(0.6).timeout
-		if not CombatStateMachine.is_combat_over():
-			CombatStateMachine.end_enemy_turn()
+	var enemies: Array[Node] = get_tree().get_nodes_in_group("enemies")
+	for enemy: Node in enemies:
+		if CombatStateMachine.is_combat_over():
+			return
+		if (
+			is_instance_valid(enemy)
+			and enemy.has_method("take_turn")
+			and enemy.has_method("is_alive")
+			and enemy.call("is_alive")
+		):
+			await enemy.take_turn()
+	if not CombatStateMachine.is_combat_over():
+		CombatStateMachine.end_enemy_turn()
 
 
 func _handle_combat_over() -> void:

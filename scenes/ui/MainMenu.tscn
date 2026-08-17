@@ -1,0 +1,68 @@
+[gd_scene load_steps=2 format=3 uid="uid://main_menu_zero_g"]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.05, 0.08, 1)
+
+[node name="Center" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -180.0
+offset_right = 220.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="Center"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 42
+text = "ZEROG"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Center"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.75, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+text = "Turn-based tactical RPG  ·  deck-builder"
+horizontal_alignment = 1
+
+[node name="NewGameButton" type="Button" parent="Center"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "NEW GAME"
+
+[node name="ContinueButton" type="Button" parent="Center"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "CONTINUE"
+
+[node name="QuitButton" type="Button" parent="Center"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "QUIT"

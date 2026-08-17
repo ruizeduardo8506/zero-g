@@ -11,9 +11,11 @@ const CLICK_AREA_SIZE := Vector2(112, 112)
 
 # GDD defaults: mana regen 5 / turn, mana cap 20.
 @export var entity_id: String = ""
+@export var display_name: String = ""
 @export var max_hp: int = 100
 @export var max_mana: int = 20
 @export var base_mana_regen: int = 5
+@export var body_color: Color = Color(0.75, 0.75, 0.8, 1.0)
 
 ## Local UI signals — EntityUI / Target Frame subscribe per-entity.
 signal local_health_changed(new_hp: int, max_hp: int)
@@ -21,6 +23,7 @@ signal local_mana_changed(new_mana: int, max_mana: int)
 
 var current_hp: int = 0
 var current_mana: int = 0
+var current_shield: int = 0
 
 var _entity_ui: Control
 var _click_area: Area2D
@@ -29,13 +32,29 @@ var _click_area: Area2D
 func _ready() -> void:
 	if entity_id.is_empty():
 		entity_id = name
+	if display_name.is_empty():
+		display_name = entity_id
 	current_hp = max_hp
-	# GDD: mana starts empty; +base_mana_regen at the start of each player turn.
 	current_mana = 0
+	current_shield = 0
+	_spawn_body()
 	_setup_click_area()
 	_spawn_entity_ui()
 	# Defer so CombatHud / other subscribers finish connecting in _ready first.
 	call_deferred("_broadcast_stats")
+
+
+func _spawn_body() -> void:
+	if get_node_or_null("Body") != null:
+		return
+	var body := ColorRect.new()
+	body.name = "Body"
+	body.size = Vector2(48, 64)
+	body.position = Vector2(-24, -32)
+	body.color = body_color
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(body)
+	move_child(body, 0)
 
 
 func _setup_click_area() -> void:
@@ -97,11 +116,31 @@ func _broadcast_stats() -> void:
 func take_damage(amount: int) -> void:
 	if amount <= 0:
 		return
+	var remaining: int = amount
+	if current_shield > 0:
+		var absorbed: int = mini(current_shield, remaining)
+		current_shield -= absorbed
+		remaining -= absorbed
+		EventBus.combat_log.emit("%s shield absorbs %d." % [display_name, absorbed])
+	if remaining <= 0:
+		_emit_health()
+		return
 	var was_alive: bool = current_hp > 0
-	current_hp = clampi(current_hp - amount, 0, max_hp)
+	current_hp = clampi(current_hp - remaining, 0, max_hp)
 	_emit_health()
 	if was_alive and current_hp == 0:
 		EventBus.entity_died.emit(entity_id)
+
+
+func apply_shield(amount: int) -> void:
+	if amount <= 0:
+		return
+	current_shield += amount
+	_emit_health()
+
+
+func clear_shield() -> void:
+	current_shield = 0
 
 
 func heal(amount: int) -> void:

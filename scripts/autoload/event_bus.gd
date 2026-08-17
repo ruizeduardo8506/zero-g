@@ -37,3 +37,7 @@ signal phase_changed(previous: int, current: int)
 # OVERWORLD / EXPLORATION
 ## Invisible random encounter after enough overworld travel (GDD § World & Exploration).
 signal random_encounter_triggered()
+signal interact_prompt_changed(text: String)
+signal party_changed()
+signal inventory_changed()
+signal enemy_telegraphed(text: String)

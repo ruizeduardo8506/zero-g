@@ -13,6 +13,8 @@ var _cards: Array[CardWidget] = []
 
 
 func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip_contents = true
 	resized.connect(_reflow_hand)
 
 

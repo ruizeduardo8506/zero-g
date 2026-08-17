@@ -1,45 +1,47 @@
 class_name StarterDeck
 extends RefCounted
 
-## Builds a minimal 20-card starter deck for the combat prototype.
+## Builds combat decks from data/cards/*.tres (GDD: 20–50 cards).
+
+const SLASH := preload("res://data/cards/slash.tres")
+const GUARD := preload("res://data/cards/guard.tres")
+const EMBER := preload("res://data/cards/ember.tres")
+const MEND := preload("res://data/cards/mend.tres")
+const STAB := preload("res://data/cards/stab.tres")
 
 
 static func create_orphan_deck() -> Array[CardData]:
 	var cards: Array[CardData] = []
-	_add_copies(cards, _make_card("slash", "Slash", 1, 5, 0, CardData.BaseClass.WARRIOR), 10)
-	_add_copies(cards, _make_card("guard", "Guard", 1, 0, 0, CardData.BaseClass.WARRIOR), 4)
-	_add_copies(cards, _make_card("ember", "Ember", 2, 8, 0, CardData.BaseClass.MAGE), 4)
-	_add_copies(cards, _make_card("mend", "Mend", 2, 0, 10, CardData.BaseClass.PRIEST), 4)
-	_add_copies(cards, _make_card("stab", "Stab", 1, 6, 0, CardData.BaseClass.ROGUE), 2)
+	_add_copies(cards, SLASH, 10)
+	_add_copies(cards, GUARD, 4)
+	_add_copies(cards, EMBER, 4)
+	_add_copies(cards, MEND, 2)
 	return cards
 
 
-static func _add_copies(target: Array[CardData], template: CardData, count: int) -> void:
+static func create_party_deck(member_ids: Array[String]) -> Array[CardData]:
+	var cards: Array[CardData] = create_orphan_deck()
+	if member_ids.has(PartyManager.BRYNNAEL):
+		_add_copies(cards, MEND, 4)
+	if member_ids.has(PartyManager.EDWARD):
+		_add_copies(cards, STAB, 4)
+	if member_ids.has(PartyManager.SELUC):
+		_add_copies(cards, SLASH, 2)
+		_add_copies(cards, EMBER, 2)
+	while cards.size() > GameConstants.DECK_MAX_SIZE:
+		cards.pop_back()
+	while cards.size() < GameConstants.DECK_MIN_SIZE:
+		_add_copies(cards, SLASH, 1)
+	return cards
+
+
+static func _add_copies(target: Array[CardData], template: Resource, count: int) -> void:
+	if count <= 0 or template == null:
+		return
+	var base_card: CardData = template as CardData
+	if base_card == null:
+		return
 	for i in count:
-		var card: CardData = template.duplicate()
-		card.id = "%s_%d" % [template.id, i]
+		var card: CardData = base_card.duplicate() as CardData
+		card.id = "%s_%d" % [base_card.id, target.size()]
 		target.append(card)
-
-
-static func _make_card(
-	id: String,
-	display_name: String,
-	mana_cost: int,
-	base_damage: int,
-	base_heal: int,
-	base_class: CardData.BaseClass,
-) -> CardData:
-	var card := CardData.new()
-	card.id = id
-	card.display_name = display_name
-	card.mana_cost = mana_cost
-	card.base_damage = base_damage
-	card.base_heal = base_heal
-	card.base_class = base_class
-	if base_heal > 0:
-		card.description = "%s — %d mana, heal %d" % [display_name, mana_cost, base_heal]
-	elif base_damage > 0:
-		card.description = "%s — %d mana, %d dmg" % [display_name, mana_cost, base_damage]
-	else:
-		card.description = "%s — %d mana" % [display_name, mana_cost]
-	return card
