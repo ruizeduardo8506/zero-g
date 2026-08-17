@@ -6,7 +6,7 @@ Turn-based tactical RPG and deck-builder hybrid built in **Godot Engine** (**2D 
 
 When design questions arise, defer to the GDD. Do not invent mechanics that contradict it.
 
-**General documentation:** `gdd/Documentation/` — supplementary project docs (tutorials, engine guides, reference PDFs). Treat the PDF library as a **topic checklist** (2D player, TileMap, autoloads, UI). Do **not** paste book source into the repo. These do not override the GDD.
+**General documentation:** `gdd/Documentation/` — supplementary project docs (tutorials, engine guides, reference PDFs). Local-only and gitignored; treat the PDF library as a **topic checklist** (2D player, TileMap, autoloads, UI). Do **not** paste book source into the repo. These do not override the GDD.
 
 Keep `gdd/Documentation/` to 2D/GDScript Godot books. Do not add 3D, Blender, Rust, or multiplayer titles.
 
@@ -49,7 +49,7 @@ Organize Godot scenes and scripts by game domain. Prefer small, composable scene
 ```
 zeroG/
 ├── gdd/                    # Design docs (read-only reference)
-│   └── Documentation/      # General documentation (tutorials, engine guides)
+│   └── Documentation/      # Local Godot books (gitignored)
 ├── assets/
 │   ├── sprites/
 │   ├── audio/
