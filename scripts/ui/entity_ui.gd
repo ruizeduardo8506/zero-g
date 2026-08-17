@@ -2,7 +2,6 @@ class_name EntityUI
 extends Control
 
 ## Compact floating HP/MP bars bound to a single CombatEntity.
-## Also acts as a drag-and-drop target for CardVisual plays.
 
 const HEALTH_FILL := Color(0.2, 0.8, 0.2, 1.0)
 const MANA_FILL := Color(0.2, 0.4, 0.9, 1.0)

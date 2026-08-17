@@ -8,7 +8,7 @@ When design questions arise, defer to the GDD. Do not invent mechanics that cont
 
 **General documentation:** `gdd/Documentation/` — supplementary project docs (tutorials, engine guides, reference PDFs). Treat the PDF library as a **topic checklist** (2D player, TileMap, autoloads, UI). Do **not** paste book source into the repo. These do not override the GDD.
 
-**Skip for this 2D GDScript project:** Godot 3D books, Blender manuals, `godot-rust.pdf`, and multiplayer books. Duplicate copies of the same beginner PDF can be ignored.
+Keep `gdd/Documentation/` to 2D/GDScript Godot books. Do not add 3D, Blender, Rust, or multiplayer titles.
 
 **Engine documentation** (Godot API, editor, and engine usage — not design sources):
 
@@ -38,7 +38,7 @@ This project is **2D only**. Scope is intentionally limited for a first Godot bu
 - Use 2D nodes: `Node2D`, `Sprite2D`, `AnimatedSprite2D`, `TileMap` / `TileMapLayer`, `Camera2D`, `CharacterBody2D`, `Area2D`, `Control`, etc.
 - Use pixel-art sprites, tilemaps, and 2D scenes. Keep the renderer on **GL Compatibility**.
 - Do **not** create or extend 3D gameplay: no `Node3D`, `Camera3D`, `MeshInstance3D`, `Sprite3D`, `DirectionalLight3D`, `GridMap`, `StandardMaterial3D`, 3D physics, or 3D main scenes.
-- If a 3D prototype already exists (`Overworld3D.tscn`, `ProceduralZone.tscn`), do not build on it — the live path is `MainMenu.tscn` → intro → `Overworld2D.tscn`.
+- Live boot path: `MainMenu.tscn` → intro → `Overworld2D.tscn`.
 
 ---
 
