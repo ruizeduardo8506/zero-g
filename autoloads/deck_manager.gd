@@ -69,6 +69,7 @@ func consume_card(card: Resource) -> bool:
 	hand.remove_at(index)
 	burn_pile.append(card)
 	_emit_piles()
+	EventBus.hand_updated.emit(_hand_as_card_data())
 	return true
 
 
@@ -82,7 +83,21 @@ func return_card_to_hand(card: Resource) -> bool:
 	burn_pile.remove_at(index)
 	hand.append(card)
 	_emit_piles()
+	EventBus.hand_updated.emit(_hand_as_card_data())
 	return true
+
+
+## Mid-combat burn revive (GDD). Returns the revived card, or null.
+func revive_from_burn() -> Resource:
+	if burn_pile.is_empty():
+		return null
+	if hand.size() >= MAX_HAND_SIZE:
+		return null
+	var card: Resource = burn_pile.pop_back()
+	hand.append(card)
+	_emit_piles()
+	EventBus.hand_updated.emit(_hand_as_card_data())
+	return card
 
 
 func play_card(card: Resource, target: Node) -> void:
@@ -109,6 +124,10 @@ func _reshuffle_burn_pile() -> void:
 
 func _emit_piles() -> void:
 	EventBus.piles_updated.emit(draw_pile.size(), burn_pile.size())
+
+
+func get_hand_cards() -> Array[CardData]:
+	return _hand_as_card_data()
 
 
 func _hand_as_card_data() -> Array[CardData]:

@@ -32,6 +32,7 @@ func setup(card: CardData, current_mana: int) -> void:
 	_class_label.text = CardData.BaseClass.keys()[card.base_class]
 	modulate = Color(1, 1, 1, 1) if _is_playable else Color(0.55, 0.55, 0.6, 0.85)
 	_glow.visible = _is_playable
+	mouse_filter = Control.MOUSE_FILTER_STOP if _is_playable else Control.MOUSE_FILTER_IGNORE
 	_apply_size()
 
 

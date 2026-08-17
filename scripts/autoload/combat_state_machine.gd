@@ -79,6 +79,7 @@ func begin_player_turn() -> void:
 	is_player_turn = true
 	turn_number += 1
 	_clear_targeting_state()
+	_clear_party_shields()
 	_transition_to(Phase.TURN_START)
 
 
@@ -260,7 +261,7 @@ func _populate_valid_targets(card_data: Resource) -> void:
 
 
 func _is_healing_or_defensive_card(card_data: Resource) -> bool:
-	return _resolve_card_heal(card_data) > 0
+	return _resolve_card_heal(card_data) > 0 or _resolve_card_shield(card_data) > 0
 
 
 func _cycle_target(direction: int) -> void:
@@ -312,15 +313,24 @@ func _on_entity_clicked(target: CombatEntity) -> void:
 	_resolve_card_on_target(target)
 
 
-func _on_entity_died(entity_id: String) -> void:
+func _on_entity_died(_entity_id: String) -> void:
 	if is_combat_over():
 		return
-	if entity_id == "player":
-		print("Game Over!")
+	if _count_living(PLAYER_GROUP) == 0:
 		_finish_combat(false)
-	elif entity_id == "enemy":
-		print("You Win!")
+	elif _count_living(ENEMIES_GROUP) == 0:
 		_finish_combat(true)
+
+
+func _count_living(group_name: String) -> int:
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return 0
+	var living: int = 0
+	for node: Node in tree.get_nodes_in_group(group_name):
+		if is_instance_valid(node) and node.has_method("is_alive") and bool(node.call("is_alive")):
+			living += 1
+	return living
 
 
 func _finish_combat(victory: bool) -> void:
@@ -360,6 +370,11 @@ func _resolve_card_on_target(target: Node) -> void:
 		EventBus.mana_updated.emit(int(player.get("current_mana")), int(player.get("max_mana")))
 
 	var target_id: String = str(target.get("entity_id")) if "entity_id" in target else target.name
+	var shield: int = _resolve_card_shield(card)
+	if shield > 0 and target.has_method("apply_shield"):
+		target.call("apply_shield", shield)
+		EventBus.combat_log.emit("Guarded %s for %d shield." % [target_id, shield])
+
 	var heal: int = _resolve_card_heal(card)
 	if heal > 0 and target.has_method("heal"):
 		target.call("heal", heal)
@@ -404,12 +419,27 @@ func _resolve_card_heal(card_data: Resource) -> int:
 	return 0
 
 
+func _resolve_card_shield(card_data: Resource) -> int:
+	if "base_shield" in card_data:
+		return int(card_data.get("base_shield"))
+	return GameConstants.GUARD_SHIELD if _resolve_card_name(card_data) == "Guard" else 0
+
+
 func _resolve_card_name(card_data: Resource) -> String:
 	if "display_name" in card_data:
 		return str(card_data.get("display_name"))
 	if "card_name" in card_data:
 		return str(card_data.get("card_name"))
 	return "card"
+
+
+func _clear_party_shields() -> void:
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	for node: Node in tree.get_nodes_in_group(PLAYER_GROUP):
+		if is_instance_valid(node) and node.has_method("clear_shield"):
+			node.call("clear_shield")
 
 
 func _find_player_entity() -> Node:

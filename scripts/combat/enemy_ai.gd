@@ -27,14 +27,13 @@ func take_turn(_player_target: Node = null) -> void:
 ## Think → pick a random living party member → damage + lunge → end turn.
 func _on_turn_started() -> void:
 	if not is_alive():
-		CombatStateMachine.end_enemy_turn()
 		return
 
+	EventBus.enemy_telegraphed.emit(telegraph_text)
 	EventBus.combat_log.emit(telegraph_text)
 	await get_tree().create_timer(THINK_DELAY_SEC).timeout
 
 	if not is_alive():
-		CombatStateMachine.end_enemy_turn()
 		return
 
 	var players: Array[Node] = get_tree().get_nodes_in_group("player")
@@ -45,7 +44,6 @@ func _on_turn_started() -> void:
 
 	if living.is_empty():
 		EventBus.combat_log.emit("Enemy finds no targets.")
-		CombatStateMachine.end_enemy_turn()
 		return
 
 	var target: Node = living[randi() % living.size()]
@@ -55,7 +53,6 @@ func _on_turn_started() -> void:
 		EventBus.combat_log.emit("Enemy hits %s for %d damage." % [target_id, attack_damage])
 
 	await _play_attack_lunge()
-	CombatStateMachine.end_enemy_turn()
 
 
 func _play_attack_lunge() -> void:

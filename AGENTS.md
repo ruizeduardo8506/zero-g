@@ -1,10 +1,21 @@
 # Project ZeroG — Agent Instructions
 
-Turn-based tactical RPG and deck-builder hybrid built in **Godot Engine** (2D, pixel art). Combat uses traditional target-selection (Final Fantasy 1–9 style) without a movement grid. Targets **PC, Mac, Android, and iOS**. Premium paid game with a free demo through the fourth party recruit (Seluc).
+Turn-based tactical RPG and deck-builder hybrid built in **Godot Engine** (**2D only**, pixel art). Combat uses traditional target-selection (Final Fantasy 1–9 style) without a movement grid. Targets **PC, Mac, Android, and iOS**. Premium paid game with a free demo through the fourth party recruit (Seluc).
 
 **Source of truth for design:** `gdd/GAME DESIGN DOCUMENT_ Project _ZeroG_.pdf`
 
 When design questions arise, defer to the GDD. Do not invent mechanics that contradict it.
+
+**General documentation:** `gdd/Documentation/` — supplementary project docs (tutorials, engine guides, reference PDFs). Treat the PDF library as a **topic checklist** (2D player, TileMap, autoloads, UI). Do **not** paste book source into the repo. These do not override the GDD.
+
+**Skip for this 2D GDScript project:** Godot 3D books, Blender manuals, `godot-rust.pdf`, and multiplayer books. Duplicate copies of the same beginner PDF can be ignored.
+
+**Engine documentation** (Godot API, editor, and engine usage — not design sources):
+
+- Official Godot docs: https://docs.godotengine.org/en/latest/index.html
+- Guide to the Godot game engine (Wikibooks): https://en.wikibooks.org/wiki/Guide_to_the_Godot_game_engine
+
+Consult official docs first when implementing scenes, scripts, nodes, resources, or other engine features. Prefer the official docs for current Godot 4.x APIs.
 
 ---
 
@@ -12,11 +23,22 @@ When design questions arise, defer to the GDD. Do not invent mechanics that cont
 
 | Layer | Choice |
 |-------|--------|
-| Engine | Godot 4.x (2D renderer, cross-platform mobile) |
+| Engine | Godot 4.x (**2D only**, cross-platform mobile) |
 | Language | GDScript (primary); C# only if a dependency requires it |
 | Art | 16-bit / pixel art sprites |
 | UI | Clean, modern, minimalist — high-tech "Solo Leveling" system vibe; must not clutter mobile screens |
 | Audio | HD-2D style orchestrated soundtrack over retro graphics; high-fidelity SFX |
+
+---
+
+## 2D Only
+
+This project is **2D only**. Scope is intentionally limited for a first Godot build. The overworld is **top-down tilemaps** (`TileMapLayer` + `CharacterBody2D` + `Camera2D`), not isometric or 3D.
+
+- Use 2D nodes: `Node2D`, `Sprite2D`, `AnimatedSprite2D`, `TileMap` / `TileMapLayer`, `Camera2D`, `CharacterBody2D`, `Area2D`, `Control`, etc.
+- Use pixel-art sprites, tilemaps, and 2D scenes. Keep the renderer on **GL Compatibility**.
+- Do **not** create or extend 3D gameplay: no `Node3D`, `Camera3D`, `MeshInstance3D`, `Sprite3D`, `DirectionalLight3D`, `GridMap`, `StandardMaterial3D`, 3D physics, or 3D main scenes.
+- If a 3D prototype already exists (`Overworld3D.tscn`, `ProceduralZone.tscn`), do not build on it — the live path is `MainMenu.tscn` → intro → `Overworld2D.tscn`.
 
 ---
 
@@ -27,6 +49,7 @@ Organize Godot scenes and scripts by game domain. Prefer small, composable scene
 ```
 zeroG/
 ├── gdd/                    # Design docs (read-only reference)
+│   └── Documentation/      # General documentation (tutorials, engine guides)
 ├── assets/
 │   ├── sprites/
 │   ├── audio/
@@ -34,8 +57,9 @@ zeroG/
 │   └── fonts/
 ├── scenes/
 │   ├── combat/
-│   ├── overworld/
-│   ├── guildhall/
+│   ├── overworld/          # Top-down 2D (Overworld2D.tscn)
+│   ├── guildhall/          # Heretic's Shack
+│   ├── world/              # 2D rift / extra zones
 │   ├── ui/
 │   └── characters/
 ├── scripts/
@@ -163,6 +187,7 @@ Tone: underdog scavenger rising from nothing; divine war backdrop; technology vs
 ## What NOT to Do
 
 - Do not add free-to-play monetization, ads, or gacha — this is a **premium** title.
+- Do not add 3D nodes, scenes, cameras, meshes, lights, or physics — this game is **2D only**.
 - Do not add grid-based movement or real-time action combat.
 - Do not introduce new rarity tiers or rename existing ones.
 - Do not clutter the UI with fantasy ornamentation; keep the high-tech system aesthetic.
@@ -176,14 +201,14 @@ Tone: underdog scavenger rising from nothing; divine war backdrop; technology vs
 > Update this section as the Godot project is scaffolded.
 
 ```bash
-# Run the game (once project.godot exists)
+# Run the game
 godot --path .
 
-# Run tests (once GUT or test framework is added)
-godot --path . -s addons/gut/gut_cmdln.gd
+# Headless smoke tests
+godot --path . -s tests/unit/smoke_core_systems.gd
 ```
 
-Until the project is initialized, agents may scaffold `project.godot` and directory structure when asked.
+Main scene is `scenes/ui/MainMenu.tscn`. Exploration is `scenes/overworld/Overworld2D.tscn`.
 
 ---
 

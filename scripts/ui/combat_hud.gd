@@ -15,6 +15,8 @@ const MANA_BURN_FLASH_SEC: float = 0.18
 const MANA_BURN_RESTORE_SEC: float = 0.35
 
 signal end_turn_pressed
+signal physical_attack_pressed
+signal burn_revive_pressed
 
 @export var health_bar: ProgressBar
 @export var mana_bar: ProgressBar
@@ -47,8 +49,15 @@ func _ready() -> void:
 
 	if _end_turn_button != null:
 		_end_turn_button.pressed.connect(func() -> void: end_turn_pressed.emit())
+	var physical_button: Button = get_node_or_null("%PhysicalButton") as Button
+	if physical_button != null:
+		physical_button.pressed.connect(func() -> void: physical_attack_pressed.emit())
+	var revive_button: Button = get_node_or_null("%ReviveButton") as Button
+	if revive_button != null:
+		revive_button.pressed.connect(func() -> void: burn_revive_pressed.emit())
 	EventBus.combat_log.connect(_on_combat_log)
 	EventBus.target_hovered.connect(_on_target_hovered)
+	EventBus.enemy_telegraphed.connect(_on_enemy_telegraphed)
 
 
 func get_hand_container() -> HandContainer:
@@ -56,12 +65,22 @@ func get_hand_container() -> HandContainer:
 
 
 func set_interaction_enabled(enabled: bool) -> void:
-	if _end_turn_button != null:
-		_end_turn_button.disabled = not enabled
+	var physical_button: Button = get_node_or_null("%PhysicalButton") as Button
+	if physical_button != null:
+		physical_button.disabled = not enabled
+	var revive_button: Button = get_node_or_null("%ReviveButton") as Button
+	if revive_button != null:
+		revive_button.disabled = not enabled
 	if _hand_container != null:
 		_hand_container.mouse_filter = (
 			Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
 		)
+
+
+## End Turn stays available for the whole player turn, including 0 mana and targeting.
+func set_end_turn_enabled(enabled: bool) -> void:
+	if _end_turn_button != null:
+		_end_turn_button.disabled = not enabled
 
 
 func update_turn(turn_number: int, phase_name: String) -> void:
@@ -87,6 +106,18 @@ func update_piles(draw_count: int, burn_count: int) -> void:
 		_pile_label.text = "DRAW %d  |  BURN %d" % [draw_count, burn_count]
 
 
+func update_plays(played: int) -> void:
+	var plays_label: Label = get_node_or_null("%PlaysLabel") as Label
+	if plays_label != null:
+		plays_label.text = "PLAYS %d / %d" % [played, GameConstants.OVERDRIVE_MAX_PLAYS]
+
+
+func _on_enemy_telegraphed(text: String) -> void:
+	var telegraph: Label = get_node_or_null("%TelegraphLabel") as Label
+	if telegraph != null:
+		telegraph.text = text
+
+
 func _on_combat_log(message: String) -> void:
 	if _log_label != null:
 		_log_label.text = message
@@ -98,7 +129,7 @@ func _on_target_hovered(entity: CombatEntity) -> void:
 	_unbind_focused_entity()
 	_focused_entity = entity
 	if target_name_label != null:
-		target_name_label.text = entity.entity_id.capitalize()
+		target_name_label.text = entity.display_name if not entity.display_name.is_empty() else entity.entity_id.capitalize()
 	_apply_bar_colors_for_entity(entity)
 	entity.local_health_changed.connect(_on_focused_health_changed)
 	entity.local_mana_changed.connect(_on_focused_mana_changed)

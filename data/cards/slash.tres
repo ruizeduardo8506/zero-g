@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/deck/card_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "slash"
+display_name = "Slash"
+description = "Slash — 1 mana, 5 dmg"
+mana_cost = 1
+base_damage = 5
+base_heal = 0
+base_shield = 0
+base_class = 0
+rarity = 1
+card_type = 0
+damage_type = 1
+is_dormant = false
+drains_full_mana = false
+can_weapon_proc = true

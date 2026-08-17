@@ -24,6 +24,7 @@ func _init() -> void:
 	_test_rarity_and_gear()
 	_test_item_names()
 	_test_legacy_deck_helpers()
+	_test_card_resources()
 	_test_load_main_scene()
 	print("")
 	if _failures == 0:
@@ -188,19 +189,36 @@ func _test_legacy_deck_helpers() -> void:
 	_ok("Legacy CardData/CombatantDeck/ManaPool/Combatant")
 
 
+func _test_card_resources() -> void:
+	var slash: CardData = load("res://data/cards/slash.tres") as CardData
+	var guard: CardData = load("res://data/cards/guard.tres") as CardData
+	if slash == null or slash.base_damage != 5:
+		_fail("slash.tres")
+		return
+	if guard == null or guard.base_shield < 1:
+		_fail("guard.tres shield")
+		return
+	var deck: Array[CardData] = StarterDeck.create_orphan_deck()
+	if deck.size() < GameConstants.DECK_MIN_SIZE:
+		_fail("orphan deck size %d" % deck.size())
+		return
+	_ok("Card resources + starter deck")
+
+
 func _test_load_main_scene() -> void:
-	var packed: PackedScene = load("res://scenes/combat/CombatScene.tscn") as PackedScene
-	if packed == null:
-		_fail("CombatScene.tscn missing")
-		return
-	var scene: Node = packed.instantiate()
-	if scene == null:
-		_fail("CombatScene instantiate")
-		return
-	# Don't enter the tree (avoids autoload/UI side effects); packing is enough smoke.
-	if scene.get_script() == null and scene.get_child_count() < 0:
-		_fail("CombatScene empty")
+	for path in [
+		"res://scenes/ui/MainMenu.tscn",
+		"res://scenes/overworld/Overworld2D.tscn",
+		"res://scenes/guildhall/HereticsShack.tscn",
+		"res://scenes/combat/CombatScene.tscn",
+	]:
+		var packed: PackedScene = load(path) as PackedScene
+		if packed == null:
+			_fail("%s missing" % path)
+			return
+		var scene: Node = packed.instantiate()
+		if scene == null:
+			_fail("%s instantiate" % path)
+			return
 		scene.free()
-		return
-	_ok("CombatScene loads (%d children)" % scene.get_child_count())
-	scene.free()
+	_ok("Core 2D scenes load")

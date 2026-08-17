@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://scripts/ui/hand_container.gd" id="2"]
 [ext_resource type="PackedScene" uid="uid://card_widget_zero_g" path="res://scenes/ui/combat/CardWidget.tscn" id="3"]
 
-[node name="CombatHud" type="Control"]
+[node name="CombatHud" type="Control" node_paths=PackedStringArray("health_bar", "mana_bar", "health_label", "mana_label", "target_name_label")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,6 +13,11 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
+health_bar = NodePath("SafeMargin/Layout/TopBar/TargetFrame/TargetVBox/HealthBar")
+mana_bar = NodePath("SafeMargin/Layout/TopBar/TargetFrame/TargetVBox/ManaBar")
+health_label = NodePath("SafeMargin/Layout/TopBar/TargetFrame/TargetVBox/HealthLabel")
+mana_label = NodePath("SafeMargin/Layout/TopBar/TargetFrame/TargetVBox/ManaLabel")
+target_name_label = NodePath("SafeMargin/Layout/TopBar/TargetFrame/TargetVBox/TargetNameLabel")
 
 [node name="SafeMargin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -21,6 +26,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
@@ -28,49 +34,96 @@ theme_override_constants/margin_bottom = 16
 
 [node name="Layout" type="VBoxContainer" parent="SafeMargin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+mouse_filter = 2
+theme_override_constants/separation = 8
 
-[node name="TopBar" type="PanelContainer" parent="SafeMargin/Layout"]
+[node name="TopBar" type="HBoxContainer" parent="SafeMargin/Layout"]
 layout_mode = 2
+theme_override_constants/separation = 16
 
-[node name="TopHBox" type="HBoxContainer" parent="SafeMargin/Layout/TopBar"]
+[node name="StatusVBox" type="VBoxContainer" parent="SafeMargin/Layout/TopBar"]
 layout_mode = 2
-theme_override_constants/separation = 24
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
 
-[node name="TurnLabel" type="Label" parent="SafeMargin/Layout/TopBar/TopHBox"]
+[node name="TurnLabel" type="Label" parent="SafeMargin/Layout/TopBar/StatusVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "TURN 01"
 
-[node name="PhaseLabel" type="Label" parent="SafeMargin/Layout/TopBar/TopHBox"]
+[node name="PhaseLabel" type="Label" parent="SafeMargin/Layout/TopBar/StatusVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.65, 0.75, 0.85, 1)
 theme_override_font_sizes/font_size = 14
 text = "PLAYER_MAIN"
 
-[node name="ManaLabel" type="Label" parent="SafeMargin/Layout/TopBar/TopHBox"]
+[node name="ManaLabel" type="Label" parent="SafeMargin/Layout/TopBar/StatusVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 text = "MANA 0 / 20"
-horizontal_alignment = 2
 
-[node name="PileLabel" type="Label" parent="SafeMargin/Layout/TopBar/TopHBox"]
+[node name="PileLabel" type="Label" parent="SafeMargin/Layout/TopBar/StatusVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.75, 0.85, 1)
 theme_override_font_sizes/font_size = 14
 text = "DRAW 0  |  BURN 0"
-horizontal_alignment = 2
+
+[node name="PlaysLabel" type="Label" parent="SafeMargin/Layout/TopBar/StatusVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "PLAYS 0 / 12"
+
+[node name="TargetFrame" type="PanelContainer" parent="SafeMargin/Layout/TopBar"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+
+[node name="TargetVBox" type="VBoxContainer" parent="SafeMargin/Layout/TopBar/TargetFrame"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TargetNameLabel" type="Label" parent="SafeMargin/Layout/TopBar/TargetFrame/TargetVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "TARGET"
+
+[node name="HealthBar" type="ProgressBar" parent="SafeMargin/Layout/TopBar/TargetFrame/TargetVBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="SafeMargin/Layout/TopBar/TargetFrame/TargetVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "HP: —/—"
+
+[node name="ManaBar" type="ProgressBar" parent="SafeMargin/Layout/TopBar/TargetFrame/TargetVBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+show_percentage = false
+
+[node name="ManaLabel" type="Label" parent="SafeMargin/Layout/TopBar/TargetFrame/TargetVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "MP: —/—"
 
 [node name="Spacer" type="Control" parent="SafeMargin/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
+
+[node name="TelegraphLabel" type="Label" parent="SafeMargin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.7, 0.35, 1)
+theme_override_font_sizes/font_size = 14
+text = ""
+autowrap_mode = 2
 
 [node name="LogLabel" type="Label" parent="SafeMargin/Layout"]
 unique_name_in_owner = true
@@ -82,7 +135,7 @@ autowrap_mode = 2
 
 [node name="HandContainer" type="Control" parent="SafeMargin/Layout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 size_flags_vertical = 8
 script = ExtResource("2")
@@ -92,8 +145,27 @@ min_card_width = 64.0
 card_spacing = 8.0
 bottom_margin = 0.0
 
-[node name="EndTurnButton" type="Button" parent="SafeMargin/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+[node name="ActionRow" type="HBoxContainer" parent="SafeMargin/Layout"]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PhysicalButton" type="Button" parent="SafeMargin/Layout/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "STRIKE"
+
+[node name="ReviveButton" type="Button" parent="SafeMargin/Layout/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "REVIVE BURN"
+
+[node name="EndTurnButton" type="Button" parent="SafeMargin/Layout/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 52)
+layout_mode = 2
+size_flags_horizontal = 3
 text = "END TURN"
